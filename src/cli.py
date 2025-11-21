@@ -37,6 +37,26 @@ def serve(
 
 
 @app.command()
+def ui(
+    host: str = typer.Option("0.0.0.0", "--host", "-h", help="Host to bind to"),
+    port: int = typer.Option(8080, "--port", "-p", help="Port to bind to"),
+    reload: bool = typer.Option(False, "--reload", "-r", help="Enable auto-reload"),
+):
+    """Start the web chat UI for local development."""
+    import uvicorn
+
+    console.print(f"[green]Starting SEO Agent Chat UI on http://{host}:{port}[/green]")
+    console.print("[dim]Open your browser to chat with the agents[/dim]")
+
+    uvicorn.run(
+        "src.ui.chat:app",
+        host=host,
+        port=port,
+        reload=reload,
+    )
+
+
+@app.command()
 def analyze(
     queries: Optional[list[str]] = typer.Option(None, "--query", "-q", help="Queries to analyze"),
     full: bool = typer.Option(False, "--full", "-f", help="Run full analysis"),
