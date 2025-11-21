@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=development
+      - APP_DEBUG=true
+      - REDIS_URL=redis://redis:6379/0
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    volumes:
+      - ./src:/app/src:ro
+      - ./credentials:/app/credentials:ro
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    environment:
+      - APP_ENV=development
+      - REDIS_URL=redis://redis:6379/0
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    volumes:
+      - ./src:/app/src:ro
+      - ./credentials:/app/credentials:ro
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  # Optional: Celery beat for scheduled tasks
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: celery -A src.tasks beat --loglevel=info
+    environment:
+      - APP_ENV=development
+      - REDIS_URL=redis://redis:6379/0
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    restart: unless-stopped
+    profiles:
+      - with-scheduler
+
+volumes:
+  redis_data:

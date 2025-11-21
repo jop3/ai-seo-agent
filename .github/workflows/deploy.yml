@@ -1,0 +1,108 @@
+name: Build and Deploy to Azure
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  AZURE_CONTAINER_REGISTRY: ${{ secrets.AZURE_CONTAINER_REGISTRY }}
+  RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+  API_CONTAINER_APP: ca-ai-seo-agent-api-prod
+  WORKER_CONTAINER_APP: ca-ai-seo-agent-worker-prod
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install .[dev]
+
+      - name: Run linting
+        run: |
+          ruff check src/
+          mypy src/
+
+      - name: Run tests
+        run: |
+          pytest tests/ -v --cov=src --cov-report=xml
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Login to Azure Container Registry
+        run: |
+          az acr login --name ${{ env.AZURE_CONTAINER_REGISTRY }}
+
+      - name: Build and push API image
+        run: |
+          docker build -t ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/ai-seo-agent-api:${{ github.sha }} -f Dockerfile .
+          docker tag ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/ai-seo-agent-api:${{ github.sha }} ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/ai-seo-agent-api:latest
+          docker push ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/ai-seo-agent-api:${{ github.sha }}
+          docker push ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/ai-seo-agent-api:latest
+
+      - name: Build and push Worker image
+        run: |
+          docker build -t ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/ai-seo-agent-worker:${{ github.sha }} -f Dockerfile.worker .
+          docker tag ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/ai-seo-agent-worker:${{ github.sha }} ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/ai-seo-agent-worker:latest
+          docker push ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/ai-seo-agent-worker:${{ github.sha }}
+          docker push ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/ai-seo-agent-worker:latest
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy API Container App
+        run: |
+          az containerapp update \
+            --name ${{ env.API_CONTAINER_APP }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --image ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/ai-seo-agent-api:${{ github.sha }}
+
+      - name: Deploy Worker Container App
+        run: |
+          az containerapp update \
+            --name ${{ env.WORKER_CONTAINER_APP }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --image ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/ai-seo-agent-worker:${{ github.sha }}
+
+      - name: Verify deployment
+        run: |
+          az containerapp show \
+            --name ${{ env.API_CONTAINER_APP }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --query "properties.latestRevisionFqdn" -o tsv
