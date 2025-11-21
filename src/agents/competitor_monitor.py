@@ -237,12 +237,63 @@ class CompetitorMonitorAgent(BaseAgent):
         }
 
     async def _detect_content_changes(self, params: dict[str, Any]) -> dict[str, Any]:
-        """Detect content changes on competitor sites."""
-        # Would integrate with a change detection service or wayback machine
+        """Detect content changes on competitor sites using Wayback Machine."""
+        competitor_urls = params.get("urls", [])
+        days_back = params.get("days_back", 30)
+
+        if not competitor_urls:
+            return {"data": {"error": "urls list is required"}, "recommendations": []}
+
+        # Use Wayback client (always available - no API key needed)
+        if self.context.wayback_client:
+            result = await self.context.wayback_client.check_competitor_changes(
+                competitor_urls=competitor_urls,
+                days_back=days_back,
+            )
+
+            recommendations = []
+            alerts = []
+
+            pages_with_changes = [r for r in result.get("results", []) if r.get("has_changes")]
+
+            if pages_with_changes:
+                # Check for significant changes
+                title_changes = []
+                content_changes = []
+
+                for page in pages_with_changes:
+                    for change in page.get("changes", []):
+                        if change.get("type") == "title_change":
+                            title_changes.append(page["url"])
+                        if change.get("type") == "content_length_change":
+                            content_changes.append(page["url"])
+
+                if title_changes:
+                    alerts.append(Alert(
+                        title=f"{len(title_changes)} competitor pages changed titles",
+                        message="Competitors may be optimizing for new keywords",
+                        severity=Severity.WARNING,
+                        source="competitor-monitor",
+                        data={"urls": title_changes[:5]},
+                    ))
+
+                recommendations.append(Recommendation(
+                    title=f"{len(pages_with_changes)} competitor pages updated recently",
+                    description="Review competitor changes to understand their SEO strategy",
+                    priority=Priority.MEDIUM,
+                    category="competitor_monitoring",
+                ))
+
+            return {
+                "data": result,
+                "recommendations": recommendations,
+                "alerts": alerts,
+            }
+
+        # Fallback (shouldn't happen as Wayback is always available)
         return {
             "data": {
-                "message": "Content change detection requires historical data storage",
-                "suggestion": "Enable historical storage to track competitor changes over time",
+                "message": "Wayback client not initialized",
             },
             "recommendations": [],
             "alerts": [],

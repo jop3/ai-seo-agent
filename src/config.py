@@ -62,6 +62,22 @@ class SerpSettings(BaseSettings):
     api_key: SecretStr = SecretStr("")
 
 
+class AhrefsSettings(BaseSettings):
+    """Ahrefs API configuration."""
+
+    model_config = SettingsConfigDict(env_prefix="AHREFS_")
+
+    api_key: SecretStr = SecretStr("")
+
+
+class BingSettings(BaseSettings):
+    """Bing Web Search API configuration."""
+
+    model_config = SettingsConfigDict(env_prefix="BING_")
+
+    api_key: SecretStr = SecretStr("")
+
+
 class OptimizelySettings(BaseSettings):
     """Optimizely CMS configuration."""
 
@@ -109,6 +125,8 @@ class Settings(BaseSettings):
     storage: StorageSettings = Field(default_factory=StorageSettings)
     google: GoogleSettings = Field(default_factory=GoogleSettings)
     serp: SerpSettings = Field(default_factory=SerpSettings)
+    ahrefs: AhrefsSettings = Field(default_factory=AhrefsSettings)
+    bing: BingSettings = Field(default_factory=BingSettings)
     optimizely: OptimizelySettings = Field(default_factory=OptimizelySettings)
     alerts: AlertSettings = Field(default_factory=AlertSettings)
 

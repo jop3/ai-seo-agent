@@ -199,18 +199,36 @@ class MultiEngineTrackerAgent(BaseAgent):
         return result
 
     async def _check_bing_queries(self, queries: list[str]) -> dict[str, Any]:
-        """Check Bing Copilot for citations."""
+        """Check Bing rankings and instant answers."""
         result = {
-            "engine": "bing_copilot",
+            "engine": "bing",
             "queries_checked": len(queries),
-            "citation_count": 0,
-            "citations": [],
-            "note": "Bing API integration available via Azure Cognitive Services",
+            "ranking_count": 0,
+            "instant_answer_count": 0,
+            "rankings": [],
         }
 
-        # Would integrate with Bing Web Search API + analyze Copilot responses
-        # Requires Azure Cognitive Services subscription
+        # Use Bing client if available
+        if self.context.bing_client and self.context.bing_client.available:
+            tracking = await self.context.bing_client.track_queries(
+                queries=queries,
+                target_domain=self.context.client_domain or "",
+            )
 
+            result["rankings"] = tracking.get("results", [])
+            result["ranking_count"] = tracking.get("queries_ranked", 0)
+            result["average_position"] = tracking.get("average_position")
+
+            # Count instant answers
+            for r in result["rankings"]:
+                if r.get("has_instant_answer"):
+                    result["instant_answer_count"] += 1
+
+            return result
+
+        # Graceful degradation
+        result["available"] = False
+        result["error"] = "Bing API key not configured. Add BING_API_KEY to your environment."
         return result
 
     async def _check_chatgpt_queries(self, queries: list[str]) -> dict[str, Any]:

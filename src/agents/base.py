@@ -29,6 +29,9 @@ from src.integrations.google_search_console import GoogleSearchConsoleClient
 from src.integrations.optimizely import OptimizelyClient
 from src.integrations.serp import SerpClient
 from src.integrations.teams import TeamsNotifier
+from src.integrations.ahrefs import AhrefsClient
+from src.integrations.bing import BingClient
+from src.integrations.wayback import WaybackClient
 from src.models.agents import AgentResult, AgentTask, AgentType, Alert, Recommendation, Severity
 
 logger = structlog.get_logger()
@@ -44,6 +47,9 @@ class AgentContext:
     serp_client: SerpClient | None = None
     optimizely_client: OptimizelyClient | None = None
     teams_notifier: TeamsNotifier | None = None
+    ahrefs_client: AhrefsClient | None = None
+    bing_client: BingClient | None = None
+    wayback_client: WaybackClient | None = None
 
     # Runtime data
     client_domain: str = ""

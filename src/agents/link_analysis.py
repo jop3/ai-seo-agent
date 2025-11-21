@@ -245,27 +245,49 @@ Be concise and actionable."""
         }
 
     async def _find_unlinked_mentions(self, params: dict[str, Any]) -> dict[str, Any]:
-        """Find unlinked brand mentions (would integrate with brand monitoring API)."""
+        """Find unlinked brand mentions using Ahrefs Content Explorer."""
         brand_name = params.get("brand_name", "")
+        domain = params.get("domain", self.context.client_domain)
 
-        # This would integrate with services like:
-        # - Google Alerts
-        # - Mention.com
-        # - Brand24
-        # - Ahrefs Content Explorer
+        if not brand_name:
+            return {"data": {"error": "brand_name is required"}, "recommendations": []}
 
+        # Use Ahrefs client if available
+        if self.context.ahrefs_client and self.context.ahrefs_client.available:
+            result = await self.context.ahrefs_client.find_unlinked_mentions(
+                brand_name=brand_name,
+                domain=domain or "",
+                limit=params.get("limit", 100),
+            )
+
+            recommendations = []
+            if result.get("mentions"):
+                high_dr = [m for m in result["mentions"] if m.get("domain_rating", 0) >= 50]
+                recommendations.append(Recommendation(
+                    title=f"Found {len(result['mentions'])} unlinked brand mentions",
+                    description=f"{len(high_dr)} on high-authority sites (DR 50+). Reach out for link opportunities.",
+                    priority=Priority.HIGH if high_dr else Priority.MEDIUM,
+                    category="link_building",
+                ))
+
+            return {
+                "data": result,
+                "recommendations": recommendations,
+            }
+
+        # Graceful degradation
         return {
             "data": {
-                "message": "Unlinked mention detection requires brand monitoring API integration",
-                "suggestion": "Integrate with Ahrefs Content Explorer or similar service",
+                "available": False,
+                "error": "Ahrefs API key not configured. Add AHREFS_API_KEY to your environment.",
                 "brand_searched": brand_name,
             },
             "recommendations": [
                 Recommendation(
-                    title="Set up brand monitoring",
-                    description="Configure alerts for brand mentions to find unlinked citation opportunities",
-                    priority=Priority.MEDIUM,
-                    category="link_building",
+                    title="Configure Ahrefs API for unlinked mention detection",
+                    description="Add AHREFS_API_KEY to enable finding unlinked brand mentions",
+                    priority=Priority.LOW,
+                    category="configuration",
                 ),
             ],
         }
@@ -374,26 +396,50 @@ Be concise and actionable."""
         }
 
     async def _analyze_competitor_backlinks(self, params: dict[str, Any]) -> dict[str, Any]:
-        """Analyze competitor backlinks (would integrate with Ahrefs/Moz API)."""
+        """Analyze competitor backlinks using Ahrefs API."""
         competitors = params.get("competitors", [])
+        your_domain = params.get("your_domain", self.context.client_domain)
 
-        # This would integrate with:
-        # - Ahrefs API
-        # - Moz API
-        # - Majestic API
+        if not competitors:
+            return {"data": {"error": "competitors list is required"}, "recommendations": []}
 
+        # Use Ahrefs client if available
+        if self.context.ahrefs_client and self.context.ahrefs_client.available:
+            result = await self.context.ahrefs_client.find_competitor_backlinks(
+                competitors=competitors,
+                your_domain=your_domain or "",
+                limit_per_competitor=params.get("limit_per_competitor", 50),
+            )
+
+            recommendations = []
+            if result.get("opportunities"):
+                high_dr = [o for o in result["opportunities"] if o.get("domain_rating", 0) >= 50]
+                recommendations.append(Recommendation(
+                    title=f"Found {len(result['opportunities'])} competitor-exclusive backlink sources",
+                    description=f"{len(high_dr)} high-authority sites (DR 50+) link to competitors but not you.",
+                    priority=Priority.HIGH if high_dr else Priority.MEDIUM,
+                    category="link_building",
+                    data={"top_opportunities": result["opportunities"][:5]},
+                ))
+
+            return {
+                "data": result,
+                "recommendations": recommendations,
+            }
+
+        # Graceful degradation
         return {
             "data": {
-                "message": "Competitor backlink analysis requires SEO tool API integration",
-                "suggestion": "Integrate with Ahrefs, Moz, or Majestic API",
+                "available": False,
+                "error": "Ahrefs API key not configured. Add AHREFS_API_KEY to your environment.",
                 "competitors": competitors,
             },
             "recommendations": [
                 Recommendation(
-                    title="Set up backlink analysis",
-                    description="Configure Ahrefs or similar API to analyze competitor backlinks",
-                    priority=Priority.MEDIUM,
-                    category="link_building",
+                    title="Configure Ahrefs API for competitor backlink analysis",
+                    description="Add AHREFS_API_KEY to enable competitor backlink gap analysis",
+                    priority=Priority.LOW,
+                    category="configuration",
                 ),
             ],
         }
