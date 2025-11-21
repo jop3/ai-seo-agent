@@ -15,6 +15,9 @@ from src.agents.content_decay import ContentDecayAgent
 from src.agents.schema_agent import SchemaAgent
 from src.agents.predictive_seo import PredictiveSEOAgent
 from src.agents.local_seo import LocalSEOAgent
+from src.agents.eeat_analyzer import EEATAnalyzerAgent
+from src.agents.multi_platform_seo import MultiPlatformSEOAgent
+from src.agents.ai_content_analyzer import AIContentAnalyzerAgent
 
 __all__ = [
     # Base
@@ -36,4 +39,8 @@ __all__ = [
     "SchemaAgent",
     "PredictiveSEOAgent",
     "LocalSEOAgent",
+    # Future-proofing agents
+    "EEATAnalyzerAgent",
+    "MultiPlatformSEOAgent",
+    "AIContentAnalyzerAgent",
 ]

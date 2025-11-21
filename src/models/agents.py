@@ -27,6 +27,9 @@ class AgentType(str, Enum):
     SCHEMA_GENERATOR = "schema_generator"
     PREDICTIVE_SEO = "predictive_seo"
     LOCAL_SEO = "local_seo"
+    EEAT_ANALYZER = "eeat_analyzer"
+    MULTI_PLATFORM_SEO = "multi_platform_seo"
+    AI_CONTENT_ANALYZER = "ai_content_analyzer"
 
 
 class TaskStatus(str, Enum):
