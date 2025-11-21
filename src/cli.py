@@ -274,5 +274,236 @@ def config():
     console.print(table)
 
 
+# =============================================================================
+# AGENT COMMANDS - Conversational interface to agents
+# =============================================================================
+
+@app.command()
+def chat(
+    agent: str = typer.Option("seo-analyst", "--agent", "-a", help="Agent to chat with"),
+    task: str = typer.Argument(None, help="Initial task/question"),
+):
+    """
+    Chat with an AI agent.
+
+    Available agents: seo-analyst, agent-tester, monitoring-agent, optimizer
+
+    Examples:
+        seo-agent chat "Analyze our top queries for AIO impact"
+        seo-agent chat -a optimizer "Generate FAQ for ibuprofen side effects"
+    """
+    asyncio.run(_chat(agent, task))
+
+
+async def _chat(agent_name: str, initial_task: str | None):
+    from src.azure_agents.definitions import ALL_AGENTS
+    from src.azure_agents.runner import LocalAgentRunner, ConversationalAgent
+
+    # Find agent
+    agent = next((a for a in ALL_AGENTS if a.name == agent_name), None)
+    if not agent:
+        console.print(f"[red]Unknown agent: {agent_name}[/red]")
+        console.print("Available agents:")
+        for a in ALL_AGENTS:
+            console.print(f"  - {a.name}: {a.description}")
+        return
+
+    console.print(f"\n[green]Starting chat with {agent.name}[/green]")
+    console.print(f"[dim]{agent.description}[/dim]")
+    console.print("[dim]Type 'exit' to quit, 'clear' to reset history[/dim]\n")
+
+    # Create conversational agent
+    runner = LocalAgentRunner()
+    conv_agent = ConversationalAgent(agent, runner)
+
+    # Handle initial task
+    if initial_task:
+        await _process_chat_message(conv_agent, initial_task)
+
+    # Interactive loop
+    while True:
+        try:
+            user_input = console.input("[bold cyan]You:[/bold cyan] ")
+
+            if user_input.lower() == "exit":
+                console.print("[yellow]Goodbye![/yellow]")
+                break
+            elif user_input.lower() == "clear":
+                conv_agent.clear_history()
+                console.print("[dim]History cleared[/dim]")
+                continue
+            elif not user_input.strip():
+                continue
+
+            await _process_chat_message(conv_agent, user_input)
+
+        except KeyboardInterrupt:
+            console.print("\n[yellow]Goodbye![/yellow]")
+            break
+
+
+async def _process_chat_message(conv_agent, message: str):
+    from rich.markdown import Markdown
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+        transient=True,
+    ) as progress:
+        task = progress.add_task("Thinking...", total=None)
+
+        response = await conv_agent.chat(message)
+
+    if response.success:
+        console.print(f"\n[bold green]{conv_agent.agent.name}:[/bold green]")
+        console.print(Markdown(response.message))
+
+        if response.tool_calls_made:
+            console.print(f"\n[dim]Tools used: {', '.join(response.tool_calls_made)}[/dim]")
+        console.print()
+    else:
+        console.print(f"[red]Error: {response.message}[/red]\n")
+
+
+@app.command()
+def agents():
+    """List available agents and their capabilities."""
+    from src.azure_agents.definitions import ALL_AGENTS
+
+    for agent in ALL_AGENTS:
+        console.print(f"\n[bold cyan]{agent.name}[/bold cyan]")
+        console.print(f"  {agent.description}")
+        console.print(f"  [dim]Tools:[/dim]")
+        for tool in agent.tools:
+            console.print(f"    - {tool.name}: {tool.description[:60]}...")
+
+
+@app.command()
+def run_task(
+    agent: str = typer.Option(..., "--agent", "-a", help="Agent to use"),
+    task: str = typer.Argument(..., help="Task to execute"),
+    output_file: str = typer.Option(None, "--output", "-o", help="Save result to file"),
+):
+    """
+    Run a single task with an agent (non-interactive).
+
+    Example:
+        seo-agent run-task -a seo-analyst "Check AIO status for these queries: ibuprofen, paracetamol"
+    """
+    asyncio.run(_run_task(agent, task, output_file))
+
+
+async def _run_task(agent_name: str, task: str, output_file: str | None):
+    import json
+    from src.azure_agents.runner import run_agent_task
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    ) as progress:
+        prog_task = progress.add_task(f"Running {agent_name}...", total=None)
+
+        response = await run_agent_task(agent_name, task)
+
+    if response.success:
+        console.print(f"\n[green]Task completed successfully[/green]")
+        console.print(f"\n{response.message}")
+
+        if output_file:
+            result = {
+                "success": response.success,
+                "message": response.message,
+                "data": response.data,
+                "tool_calls": response.tool_calls_made,
+                "execution_time_ms": response.execution_time_ms,
+            }
+            with open(output_file, "w") as f:
+                json.dump(result, f, indent=2)
+            console.print(f"\n[dim]Result saved to {output_file}[/dim]")
+    else:
+        console.print(f"[red]Task failed: {response.message}[/red]")
+
+
+# =============================================================================
+# AZURE DEPLOYMENT COMMANDS
+# =============================================================================
+
+@app.command()
+def deploy_agents(
+    connection_string: str = typer.Option(..., "--connection-string", "-c", help="Azure AI Project connection string"),
+):
+    """
+    Deploy all agents to Azure AI Agent Service.
+
+    This registers the agent definitions with Azure so they can be
+    run on Azure infrastructure.
+    """
+    asyncio.run(_deploy_agents(connection_string))
+
+
+async def _deploy_agents(connection_string: str):
+    from src.azure_agents.client import AzureAgentClient
+    from src.azure_agents.definitions import ALL_AGENTS
+
+    console.print("[yellow]Deploying agents to Azure AI Agent Service...[/yellow]\n")
+
+    try:
+        client = AzureAgentClient(project_connection_string=connection_string)
+
+        for agent in ALL_AGENTS:
+            with console.status(f"Deploying {agent.name}..."):
+                try:
+                    info = await client.deploy_agent(agent)
+                    console.print(f"[green]  {agent.name}: deployed (ID: {info.agent_id})[/green]")
+                except Exception as e:
+                    console.print(f"[red]  {agent.name}: failed - {e}[/red]")
+
+        console.print("\n[green]Deployment complete![/green]")
+
+    except ImportError:
+        console.print("[red]Azure AI Projects SDK not installed.[/red]")
+        console.print("Install with: pip install azure-ai-projects azure-identity")
+    except Exception as e:
+        console.print(f"[red]Deployment failed: {e}[/red]")
+
+
+@app.command()
+def list_azure_agents(
+    connection_string: str = typer.Option(..., "--connection-string", "-c", help="Azure AI Project connection string"),
+):
+    """List agents deployed to Azure AI Agent Service."""
+    asyncio.run(_list_azure_agents(connection_string))
+
+
+async def _list_azure_agents(connection_string: str):
+    from src.azure_agents.client import AzureAgentClient
+
+    try:
+        client = AzureAgentClient(project_connection_string=connection_string)
+        agents = await client.list_agents()
+
+        if not agents:
+            console.print("[yellow]No agents deployed[/yellow]")
+            return
+
+        table = Table(title="Deployed Azure Agents")
+        table.add_column("Name", style="cyan")
+        table.add_column("ID", style="dim")
+        table.add_column("Model", style="green")
+        table.add_column("Status", style="yellow")
+
+        for agent in agents:
+            table.add_row(agent.name, agent.agent_id[:20] + "...", agent.model, agent.status)
+
+        console.print(table)
+
+    except ImportError:
+        console.print("[red]Azure AI Projects SDK not installed.[/red]")
+    except Exception as e:
+        console.print(f"[red]Failed to list agents: {e}[/red]")
+
+
 if __name__ == "__main__":
     app()
