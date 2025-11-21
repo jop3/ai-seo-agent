@@ -16,12 +16,15 @@ class AgentType(str, Enum):
     OPTIMIZATION_RECOMMENDER = "optimization_recommender"
     MONITORING = "monitoring"
     REPORT_GENERATOR = "report_generator"
-    # New agent types
+    # Extended agent types
     COMPETITOR_MONITOR = "competitor_monitor"
     CONTENT_GENERATOR = "content_generator"
     MULTI_ENGINE_TRACKER = "multi_engine_tracker"
     TECHNICAL_AUDITOR = "technical_auditor"
     LINK_ANALYZER = "link_analyzer"
+    SERP_FEATURES = "serp_features"
+    CONTENT_DECAY = "content_decay"
+    SCHEMA_GENERATOR = "schema_generator"
 
 
 class TaskStatus(str, Enum):
@@ -101,10 +104,11 @@ class Recommendation(BaseModel):
     """An optimization recommendation."""
 
     id: str = Field(default_factory=lambda: "")
-    type: RecommendationType
-    priority: RecommendationPriority
+    type: RecommendationType | None = None
+    priority: RecommendationPriority = RecommendationPriority.MEDIUM
     title: str
     description: str
+    category: str | None = None  # Flexible category for agents
     affected_url: str | None = None
     affected_query: str | None = None
     current_state: str | None = None
@@ -114,6 +118,7 @@ class Recommendation(BaseModel):
     auto_implementable: bool = False
     implementation_code: str | None = None  # Schema, HTML, etc.
     status: str = "pending"  # pending, approved, implemented, rejected
+    data: dict[str, Any] = Field(default_factory=dict)  # Extra data from agents
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -142,10 +147,11 @@ class Alert(BaseModel):
     """An alert to notify the team."""
 
     id: str = Field(default_factory=lambda: "")
-    type: AlertType
-    severity: AlertSeverity
+    type: AlertType | None = None
+    severity: AlertSeverity = AlertSeverity.INFO
     title: str
     message: str
+    source: str | None = None  # Source agent/component
     data: dict[str, Any] = Field(default_factory=dict)
     acknowledged: bool = False
     acknowledged_by: str | None = None
@@ -153,3 +159,8 @@ class Alert(BaseModel):
     sent_to_teams: bool = False
     sent_to_email: bool = False
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+# Type aliases for convenience in agents
+Priority = RecommendationPriority
+Severity = AlertSeverity
