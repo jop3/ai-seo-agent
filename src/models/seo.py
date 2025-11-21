@@ -11,7 +11,7 @@ class QueryClassification(str, Enum):
     """Classification of search query intent."""
 
     INFORMATIONAL = "informational"  # "what is ibuprofen"
-    NAVIGATIONAL = "navigational"  # "apoteket stockholm"
+    NAVIGATIONAL = "navigational"  # "brand name city"
     TRANSACTIONAL = "transactional"  # "buy paracetamol online"
     COMMERCIAL = "commercial"  # "best pain reliever for headache"
     LOCAL = "local"  # "pharmacy near me"

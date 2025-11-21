@@ -103,7 +103,7 @@ seo-agent analyze --full --limit 500
 seo-agent analyze -q "ibuprofen dosage" -q "pharmacy near me"
 
 # Test a page for agent-friendliness
-seo-agent test-page https://www.apoteket.se/produkt/alvedon/
+seo-agent test-page https://www.example.com/product/item-123/
 ```
 
 ## API Endpoints

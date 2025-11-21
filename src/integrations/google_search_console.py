@@ -250,9 +250,9 @@ class GoogleSearchConsoleClient:
         if any(term in query_lower for term in commercial_terms):
             return QueryClassification.COMMERCIAL
 
-        # Navigational
-        if "apoteket" in query_lower or "apotek" in query_lower:
-            return QueryClassification.NAVIGATIONAL
+        # Navigational - brand-specific queries (customize for your domain)
+        # if "yourbrand" in query_lower:
+        #     return QueryClassification.NAVIGATIONAL
 
         # Default to informational
         return QueryClassification.INFORMATIONAL
