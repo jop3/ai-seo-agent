@@ -4,13 +4,15 @@ Link Analysis Agent - Identifies citation and link building opportunities.
 
 from datetime import datetime
 from typing import Any
+from urllib.parse import urljoin, urlparse
 
 import httpx
 import structlog
 from bs4 import BeautifulSoup
 
 from src.agents.base import BaseAgent, AgentContext
-from src.models.agents import AgentTask, AgentResult, Recommendation, Alert, Priority, Severity
+from src.core.errors import AgentError, ErrorCode
+from src.models.agents import AgentTask, AgentResult, AgentType, Recommendation, Alert, Priority, Severity
 
 logger = structlog.get_logger()
 
@@ -23,58 +25,48 @@ class LinkAnalysisAgent(BaseAgent):
     - Find unlinked brand mentions
     - Identify citation opportunities from AIO sources
     - Analyze competitor backlinks
-    - Find broken link opportunities
+    - Find broken link opportunities on authority sites
     - Suggest internal linking improvements
+    - Analyze anchor text distribution
     """
 
+    agent_type = AgentType.LINK_ANALYZER
+
     def __init__(self, context: AgentContext):
-        super().__init__(
-            agent_type="link-analysis",
-            description="Analyzes link opportunities and citation sources",
-            context=context,
+        self.context = context
+        self.logger = logger.bind(agent="link-analysis")
+
+    async def execute(self, task: AgentTask) -> AgentResult:
+        """Execute link analysis task - called by base class run() with error handling."""
+        task_handlers = {
+            "find_citation_opportunities": self._find_citation_opportunities,
+            "analyze_aio_sources": self._analyze_aio_sources,
+            "find_unlinked_mentions": self._find_unlinked_mentions,
+            "internal_link_analysis": self._internal_link_analysis,
+            "competitor_backlinks": self._analyze_competitor_backlinks,
+            "find_broken_link_opportunities": self._find_broken_link_opportunities,
+            "analyze_anchor_text": self._analyze_anchor_text,
+        }
+
+        handler = task_handlers.get(task.task_type)
+        if not handler:
+            raise AgentError(
+                f"Unknown task type: {task.task_type}",
+                agent_type="link-analysis",
+                task_type=task.task_type,
+                code=ErrorCode.VALIDATION_ERROR,
+            )
+
+        result = await handler(task.parameters)
+
+        return AgentResult(
+            task_id=task.id,
+            agent_type=self.agent_type,
+            success=True,
+            data=result["data"],
+            recommendations=result.get("recommendations", []),
+            alerts=result.get("alerts", []),
         )
-
-    async def run(self, task: AgentTask) -> AgentResult:
-        """Execute link analysis task."""
-        start_time = datetime.utcnow()
-
-        try:
-            if task.task_type == "find_citation_opportunities":
-                result = await self._find_citation_opportunities(task.parameters)
-            elif task.task_type == "analyze_aio_sources":
-                result = await self._analyze_aio_sources(task.parameters)
-            elif task.task_type == "find_unlinked_mentions":
-                result = await self._find_unlinked_mentions(task.parameters)
-            elif task.task_type == "internal_link_analysis":
-                result = await self._internal_link_analysis(task.parameters)
-            elif task.task_type == "competitor_backlinks":
-                result = await self._analyze_competitor_backlinks(task.parameters)
-            else:
-                return AgentResult(
-                    task_id=task.id,
-                    agent_type=self.agent_type,
-                    success=False,
-                    data={"error": f"Unknown task type: {task.task_type}"},
-                )
-
-            return AgentResult(
-                task_id=task.id,
-                agent_type=self.agent_type,
-                success=True,
-                data=result["data"],
-                recommendations=result.get("recommendations", []),
-                alerts=result.get("alerts", []),
-                execution_time_ms=int((datetime.utcnow() - start_time).total_seconds() * 1000),
-            )
-
-        except Exception as e:
-            logger.error("Link analysis failed", error=str(e))
-            return AgentResult(
-                task_id=task.id,
-                agent_type=self.agent_type,
-                success=False,
-                data={"error": str(e)},
-            )
 
     async def _find_citation_opportunities(self, params: dict[str, Any]) -> dict[str, Any]:
         """Find opportunities to get cited in AI Overviews."""
@@ -405,3 +397,313 @@ Be concise and actionable."""
                 ),
             ],
         }
+
+    async def _find_broken_link_opportunities(self, params: dict[str, Any]) -> dict[str, Any]:
+        """
+        Find broken link building opportunities.
+
+        Scans authority pages that link to competitors or related topics,
+        finds broken outbound links, and suggests replacements with your content.
+        """
+        target_urls = params.get("urls", [])  # Pages to scan for broken links
+        topics = params.get("topics", [])  # Topics to find relevant pages
+        max_pages = params.get("max_pages", 50)
+
+        broken_opportunities = []
+        recommendations = []
+        pages_scanned = 0
+
+        # If no URLs provided, try to find relevant pages from AIO citations
+        if not target_urls and topics and self.context.serp_client:
+            self.logger.info("Finding authority pages from AIO citations")
+            for topic in topics[:5]:
+                try:
+                    serp = await self.context.serp_client.get_serp(topic)
+                    if serp and serp.ai_overview:
+                        target_urls.extend(serp.ai_overview.get("citations", [])[:10])
+                except Exception as e:
+                    self.logger.warning("Failed to get SERP", topic=topic, error=str(e))
+
+        # Deduplicate
+        target_urls = list(set(target_urls))[:max_pages]
+
+        async with httpx.AsyncClient(
+            timeout=15.0,
+            follow_redirects=False,  # We want to detect redirects
+            headers={"User-Agent": "SEOAgentBot/1.0 (checking links)"},
+        ) as client:
+            for page_url in target_urls:
+                pages_scanned += 1
+
+                try:
+                    # Fetch the page
+                    response = await client.get(page_url, follow_redirects=True)
+                    if response.status_code != 200:
+                        continue
+
+                    soup = BeautifulSoup(response.text, "lxml")
+                    page_domain = urlparse(page_url).netloc
+
+                    # Find all external links
+                    for link in soup.find_all("a", href=True):
+                        href = link["href"]
+
+                        # Skip internal, anchor, and javascript links
+                        if href.startswith(("#", "javascript:", "mailto:", "tel:")):
+                            continue
+
+                        full_url = urljoin(page_url, href)
+                        link_domain = urlparse(full_url).netloc
+
+                        # Only check external links
+                        if link_domain == page_domain:
+                            continue
+
+                        # Check if the link is broken
+                        try:
+                            link_response = await client.head(full_url, timeout=10.0)
+
+                            if link_response.status_code in (404, 410, 500, 502, 503):
+                                anchor_text = link.text.strip()[:100]
+                                context_text = self._get_link_context(link, soup)
+
+                                broken_opportunities.append({
+                                    "source_page": page_url,
+                                    "source_domain": page_domain,
+                                    "broken_url": full_url,
+                                    "status_code": link_response.status_code,
+                                    "anchor_text": anchor_text,
+                                    "context": context_text,
+                                    "opportunity_score": self._calculate_opportunity_score(page_domain, anchor_text),
+                                })
+
+                        except httpx.TimeoutException:
+                            # Timeout might indicate a broken link
+                            broken_opportunities.append({
+                                "source_page": page_url,
+                                "source_domain": page_domain,
+                                "broken_url": full_url,
+                                "status_code": "timeout",
+                                "anchor_text": link.text.strip()[:100],
+                                "context": self._get_link_context(link, soup),
+                                "opportunity_score": 50,
+                            })
+                        except Exception:
+                            # Skip links we can't check
+                            pass
+
+                except httpx.TimeoutException:
+                    self.logger.warning("Page fetch timeout", url=page_url)
+                except Exception as e:
+                    self.logger.warning("Page scan failed", url=page_url, error=str(e))
+
+        # Sort by opportunity score
+        broken_opportunities.sort(key=lambda x: x.get("opportunity_score", 0), reverse=True)
+
+        # Generate recommendations
+        if broken_opportunities:
+            high_value = [o for o in broken_opportunities if o.get("opportunity_score", 0) >= 70]
+            recommendations.append(Recommendation(
+                title=f"Found {len(broken_opportunities)} broken link opportunities",
+                description=f"{len(high_value)} high-value opportunities on authority sites. "
+                           f"Create content matching the broken link topics and reach out to site owners.",
+                priority=Priority.HIGH if high_value else Priority.MEDIUM,
+                category="link_building",
+                estimated_impact="high" if high_value else "medium",
+            ))
+
+        return {
+            "data": {
+                "pages_scanned": pages_scanned,
+                "broken_links_found": len(broken_opportunities),
+                "opportunities": broken_opportunities[:50],  # Top 50
+                "top_source_domains": self._get_top_domains(broken_opportunities),
+            },
+            "recommendations": recommendations,
+        }
+
+    def _get_link_context(self, link_element, soup) -> str:
+        """Extract context around a link for understanding its purpose."""
+        # Try to get parent paragraph or list item
+        parent = link_element.find_parent(["p", "li", "td", "div"])
+        if parent:
+            text = parent.get_text(strip=True)[:200]
+            return text
+        return ""
+
+    def _calculate_opportunity_score(self, domain: str, anchor_text: str) -> int:
+        """Calculate opportunity score based on domain authority signals."""
+        score = 50  # Base score
+
+        # Authority domain indicators
+        authority_signals = [
+            (".edu", 30),
+            (".gov", 30),
+            (".org", 15),
+            ("university", 20),
+            ("institute", 15),
+            ("research", 10),
+            ("foundation", 10),
+        ]
+
+        domain_lower = domain.lower()
+        for signal, bonus in authority_signals:
+            if signal in domain_lower:
+                score += bonus
+                break
+
+        # Anchor text relevance (longer = more specific = better)
+        if anchor_text and len(anchor_text) > 20:
+            score += 10
+
+        return min(score, 100)
+
+    def _get_top_domains(self, opportunities: list[dict]) -> list[dict]:
+        """Get top source domains from opportunities."""
+        domain_counts = {}
+        for opp in opportunities:
+            domain = opp.get("source_domain", "")
+            if domain:
+                domain_counts[domain] = domain_counts.get(domain, 0) + 1
+
+        sorted_domains = sorted(domain_counts.items(), key=lambda x: x[1], reverse=True)
+        return [{"domain": d, "count": c} for d, c in sorted_domains[:10]]
+
+    async def _analyze_anchor_text(self, params: dict[str, Any]) -> dict[str, Any]:
+        """Analyze internal link anchor text distribution."""
+        url = params.get("url", self.context.property_url)
+        max_pages = params.get("max_pages", 100)
+
+        if not url:
+            return {"data": {"error": "URL required"}, "recommendations": []}
+
+        anchor_stats = {
+            "exact_match": [],  # Anchor matches page title/h1
+            "partial_match": [],
+            "branded": [],
+            "generic": [],  # "click here", "read more", etc.
+            "naked_url": [],
+            "image": [],
+        }
+
+        generic_anchors = {"click here", "read more", "learn more", "here", "link", "this", "more"}
+        all_anchors = []
+
+        async with httpx.AsyncClient(
+            timeout=30.0,
+            follow_redirects=True,
+            headers={"User-Agent": "SEOAgentBot/1.0"},
+        ) as client:
+            base_domain = urlparse(url).netloc
+            to_visit = [url]
+            visited = set()
+
+            while to_visit and len(visited) < max_pages:
+                current_url = to_visit.pop(0)
+                if current_url in visited:
+                    continue
+
+                visited.add(current_url)
+
+                try:
+                    response = await client.get(current_url)
+                    if response.status_code != 200:
+                        continue
+
+                    soup = BeautifulSoup(response.text, "lxml")
+
+                    for link in soup.find_all("a", href=True):
+                        href = link["href"]
+                        full_url = urljoin(current_url, href)
+                        link_domain = urlparse(full_url).netloc
+
+                        # Only analyze internal links
+                        if link_domain != base_domain:
+                            continue
+
+                        # Check if it's an image link
+                        if link.find("img"):
+                            anchor_type = "image"
+                            anchor_text = link.find("img").get("alt", "") or "[image]"
+                        else:
+                            anchor_text = link.get_text(strip=True)
+
+                            if not anchor_text:
+                                anchor_type = "naked_url"
+                                anchor_text = href
+                            elif anchor_text.lower() in generic_anchors:
+                                anchor_type = "generic"
+                            elif base_domain.split(".")[0] in anchor_text.lower():
+                                anchor_type = "branded"
+                            else:
+                                anchor_type = "partial_match"  # Default
+
+                        anchor_data = {
+                            "text": anchor_text[:100],
+                            "from_url": current_url,
+                            "to_url": full_url,
+                            "type": anchor_type,
+                        }
+
+                        anchor_stats[anchor_type].append(anchor_data)
+                        all_anchors.append(anchor_data)
+
+                        # Queue internal links for crawling
+                        if full_url not in visited and full_url not in to_visit:
+                            to_visit.append(full_url)
+
+                except Exception as e:
+                    self.logger.warning("Anchor analysis failed", url=current_url, error=str(e))
+
+        # Calculate distribution
+        total = len(all_anchors) or 1
+        distribution = {
+            anchor_type: {
+                "count": len(anchors),
+                "percentage": round(len(anchors) / total * 100, 1),
+            }
+            for anchor_type, anchors in anchor_stats.items()
+        }
+
+        recommendations = []
+
+        # Check for over-optimization or issues
+        generic_pct = distribution["generic"]["percentage"]
+        if generic_pct > 20:
+            recommendations.append(Recommendation(
+                title=f"High generic anchor text usage ({generic_pct}%)",
+                description="Replace generic anchors like 'click here' with descriptive keyword-rich anchors",
+                priority=Priority.MEDIUM,
+                category="internal_linking",
+            ))
+
+        image_pct = distribution["image"]["percentage"]
+        if image_pct > 15 and any(not a["text"] or a["text"] == "[image]" for a in anchor_stats["image"]):
+            recommendations.append(Recommendation(
+                title="Image links missing alt text",
+                description="Add descriptive alt text to images used as links",
+                priority=Priority.MEDIUM,
+                category="internal_linking",
+            ))
+
+        return {
+            "data": {
+                "pages_analyzed": len(visited),
+                "total_internal_links": len(all_anchors),
+                "distribution": distribution,
+                "top_anchors": self._get_top_anchor_texts(all_anchors),
+                "generic_anchors": anchor_stats["generic"][:20],
+            },
+            "recommendations": recommendations,
+        }
+
+    def _get_top_anchor_texts(self, anchors: list[dict]) -> list[dict]:
+        """Get most common anchor texts."""
+        counts = {}
+        for a in anchors:
+            text = a["text"].lower().strip()
+            if text and len(text) > 2:
+                counts[text] = counts.get(text, 0) + 1
+
+        sorted_anchors = sorted(counts.items(), key=lambda x: x[1], reverse=True)
+        return [{"text": t, "count": c} for t, c in sorted_anchors[:20]]
