@@ -52,9 +52,25 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "structlog>=24.1.0",
     "tenacity>=8.2.0",
+
+    # Microsoft Bot Framework (for Teams integration)
+    "botbuilder-core>=4.14.0",
+    "botbuilder-schema>=4.14.0",
 ]
 
 [project.optional-dependencies]
+azure-agents = [
+    # Azure AI Agent Service
+    "azure-ai-projects>=1.0.0b1",
+]
+
+m365 = [
+    # Full Bot Framework for Teams
+    "botbuilder-core>=4.14.0",
+    "botbuilder-schema>=4.14.0",
+    "botbuilder-integration-aiohttp>=4.14.0",
+]
+
 dev = [
     "pytest>=7.4.0",
     "pytest-asyncio>=0.23.0",
