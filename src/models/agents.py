@@ -25,6 +25,8 @@ class AgentType(str, Enum):
     SERP_FEATURES = "serp_features"
     CONTENT_DECAY = "content_decay"
     SCHEMA_GENERATOR = "schema_generator"
+    PREDICTIVE_SEO = "predictive_seo"
+    LOCAL_SEO = "local_seo"
 
 
 class TaskStatus(str, Enum):

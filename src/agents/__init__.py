@@ -13,6 +13,8 @@ from src.agents.link_analysis import LinkAnalysisAgent
 from src.agents.serp_features import SERPFeaturesAgent
 from src.agents.content_decay import ContentDecayAgent
 from src.agents.schema_agent import SchemaAgent
+from src.agents.predictive_seo import PredictiveSEOAgent
+from src.agents.local_seo import LocalSEOAgent
 
 __all__ = [
     # Base
@@ -32,4 +34,6 @@ __all__ = [
     "SERPFeaturesAgent",
     "ContentDecayAgent",
     "SchemaAgent",
+    "PredictiveSEOAgent",
+    "LocalSEOAgent",
 ]
