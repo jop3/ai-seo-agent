@@ -384,6 +384,91 @@ AI_READINESS_WORKFLOW = Workflow(
 
 
 # =============================================================================
+# AI Visibility Audit (Inspired by Swedish AI visibility service)
+# =============================================================================
+AI_VISIBILITY_AUDIT_WORKFLOW = Workflow(
+    id="ai_visibility_audit",
+    name="AI Visibility Audit (Synlighetsgranskning)",
+    description="Comprehensive brand presence analysis across all major AI assistants",
+    steps=[
+        # Phase 1: AI Engine Presence Analysis
+        {
+            "agent_type": AgentType.MULTI_ENGINE_TRACKER.value,
+            "task_type": "check_all_engines",
+            "name": "ai_engine_scan",
+            "description": "Scan ChatGPT, Claude, Gemini, Perplexity for brand presence",
+            "parameters": {
+                "engines": ["chatgpt", "claude", "gemini", "perplexity", "bing_copilot"],
+                "track_brand_mentions": True,
+            },
+        },
+        # Phase 2: Competitive Positioning (parallel after phase 1)
+        {
+            "agent_type": AgentType.COMPETITOR_MONITOR.value,
+            "task_type": "full_competitor_analysis",
+            "name": "competitor_ai_presence",
+            "description": "Compare brand vs competitor presence in AI",
+            "depends_on": ["ai_engine_scan"],
+            "parallel_group": "analysis",
+        },
+        {
+            "agent_type": AgentType.SERP_FEATURES.value,
+            "task_type": "analyze_serp_landscape",
+            "name": "aio_citation_analysis",
+            "description": "Analyze AI Overview citations and ranking",
+            "depends_on": ["ai_engine_scan"],
+            "parallel_group": "analysis",
+        },
+        # Phase 3: Authority & Trust Assessment
+        {
+            "agent_type": AgentType.EEAT_ANALYZER.value,
+            "task_type": "full_eeat_audit",
+            "name": "authority_assessment",
+            "description": "E-E-A-T signals for AI trust/authority",
+            "depends_on": ["competitor_ai_presence", "aio_citation_analysis"],
+        },
+        # Phase 4: Optimization Opportunities (parallel)
+        {
+            "agent_type": AgentType.SCHEMA_GENERATOR.value,
+            "task_type": "optimize_for_ai",
+            "name": "knowledge_graph_optimization",
+            "description": "Schema optimization for knowledge graphs",
+            "depends_on": ["authority_assessment"],
+            "parallel_group": "optimization",
+        },
+        {
+            "agent_type": AgentType.AI_CONTENT_ANALYZER.value,
+            "task_type": "analyze_site_content",
+            "name": "content_ai_readiness",
+            "description": "Content structure and semantic SEO analysis",
+            "depends_on": ["authority_assessment"],
+            "parallel_group": "optimization",
+        },
+        {
+            "agent_type": AgentType.MULTI_PLATFORM_SEO.value,
+            "task_type": "voice_search_readiness",
+            "name": "semantic_optimization",
+            "description": "Voice search and semantic SEO optimization",
+            "depends_on": ["authority_assessment"],
+            "parallel_group": "optimization",
+        },
+        # Phase 5: Strategic Recommendations
+        {
+            "agent_type": AgentType.OPTIMIZATION_RECOMMENDER.value,
+            "task_type": "generate_recommendations",
+            "name": "ai_visibility_strategy",
+            "description": "Strategic actions for AI visibility improvement",
+            "depends_on": [
+                "knowledge_graph_optimization",
+                "content_ai_readiness",
+                "semantic_optimization",
+            ],
+        },
+    ],
+)
+
+
+# =============================================================================
 # Workflow Registry
 # =============================================================================
 WORKFLOWS: dict[str, Workflow] = {
@@ -394,6 +479,7 @@ WORKFLOWS: dict[str, Workflow] = {
     "competitive": COMPETITIVE_WORKFLOW,
     "local_seo": LOCAL_SEO_WORKFLOW,
     "ai_readiness": AI_READINESS_WORKFLOW,
+    "ai_visibility_audit": AI_VISIBILITY_AUDIT_WORKFLOW,
 }
 
 
