@@ -18,12 +18,27 @@ from src.orchestrator.workflows import (
     get_workflow,
     list_workflows,
 )
+from src.orchestrator.schemas import (
+    WorkflowInput,
+    WorkflowTargets,
+    WorkflowThresholds,
+    WorkflowOptions,
+    BusinessInfo,
+    AuthorInfo,
+    CompetitorConfig,
+    create_minimal_config,
+    create_full_config,
+    EXAMPLE_ECOMMERCE_CONFIG,
+    EXAMPLE_LOCAL_BUSINESS_CONFIG,
+)
 
 __all__ = [
+    # Engine
     "AgentOrchestrator",
     "Workflow",
     "WorkflowStep",
     "WorkflowResult",
+    # Workflows
     "FULL_AUDIT_WORKFLOW",
     "QUICK_CHECK_WORKFLOW",
     "CONTENT_WORKFLOW",
@@ -34,4 +49,16 @@ __all__ = [
     "WORKFLOWS",
     "get_workflow",
     "list_workflows",
+    # Schemas
+    "WorkflowInput",
+    "WorkflowTargets",
+    "WorkflowThresholds",
+    "WorkflowOptions",
+    "BusinessInfo",
+    "AuthorInfo",
+    "CompetitorConfig",
+    "create_minimal_config",
+    "create_full_config",
+    "EXAMPLE_ECOMMERCE_CONFIG",
+    "EXAMPLE_LOCAL_BUSINESS_CONFIG",
 ]

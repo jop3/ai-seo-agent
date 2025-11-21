@@ -10,6 +10,7 @@ from src.api.dependencies import get_agent_context, verify_api_key
 from src.orchestrator import (
     AgentOrchestrator,
     WorkflowResult,
+    WorkflowInput,
     get_workflow,
     list_workflows,
 )
@@ -24,8 +25,24 @@ class WorkflowListResponse(BaseModel):
 
 
 class WorkflowRunRequest(BaseModel):
-    """Request to run a workflow."""
+    """
+    Request to run a workflow.
+
+    Can provide either:
+    1. A complete WorkflowInput with full configuration
+    2. A simple parameters dict for backward compatibility
+    """
+    # Option 1: Full structured input (recommended)
+    workflow_input: WorkflowInput | None = None
+
+    # Option 2: Simple parameters dict (backward compatible)
     parameters: dict[str, Any] = {}
+
+    def get_parameters(self) -> dict[str, Any]:
+        """Get final parameters for workflow execution."""
+        if self.workflow_input:
+            return self.workflow_input.to_params()
+        return self.parameters
 
 
 class WorkflowRunResponse(BaseModel):
@@ -57,6 +74,67 @@ _workflow_jobs: dict[str, dict[str, Any]] = {}
 async def get_available_workflows():
     """List all available workflows."""
     return WorkflowListResponse(workflows=list_workflows())
+
+
+@router.get("/config/schema")
+async def get_config_schema():
+    """
+    Get the JSON schema for WorkflowInput configuration.
+
+    Use this to understand all available configuration options.
+    """
+    return WorkflowInput.model_json_schema()
+
+
+@router.get("/config/examples")
+async def get_config_examples():
+    """
+    Get example configurations for common use cases.
+
+    These examples show how to properly configure workflows with:
+    - Company/business information
+    - Competitor tracking
+    - Target queries and pages
+    - Thresholds and options
+    """
+    from src.orchestrator import EXAMPLE_ECOMMERCE_CONFIG, EXAMPLE_LOCAL_BUSINESS_CONFIG
+
+    return {
+        "ecommerce": EXAMPLE_ECOMMERCE_CONFIG.model_dump(),
+        "local_business": EXAMPLE_LOCAL_BUSINESS_CONFIG.model_dump(),
+        "minimal": {
+            "description": "Minimal configuration with just domain",
+            "example": {
+                "workflow_input": {
+                    "targets": {
+                        "primary_domain": "example.com",
+                        "property_url": "https://example.com",
+                    }
+                }
+            }
+        },
+        "with_competitors": {
+            "description": "Configuration with competitors",
+            "example": {
+                "workflow_input": {
+                    "targets": {
+                        "primary_domain": "example.com",
+                        "property_url": "https://example.com",
+                        "competitors": [
+                            {"domain": "competitor1.com", "priority": "high"},
+                            {"domain": "competitor2.com", "priority": "medium"},
+                        ],
+                        "target_queries": ["keyword 1", "keyword 2"],
+                    },
+                    "business_info": {
+                        "name": "My Company",
+                        "url": "https://example.com",
+                        "description": "Company description",
+                    }
+                }
+            }
+        }
+    }
 
 
 @router.get("/{workflow_id}")
@@ -93,7 +171,7 @@ async def run_workflow_sync(
     logger.info("Running workflow", workflow_id=workflow_id)
 
     orchestrator = AgentOrchestrator(context)
-    result = await orchestrator.run_workflow(workflow, request.parameters)
+    result = await orchestrator.run_workflow(workflow, request.get_parameters())
 
     return WorkflowRunResponse(
         workflow_id=result.workflow_id,
@@ -137,7 +215,7 @@ async def run_workflow_async(
     async def run_in_background():
         try:
             orchestrator = AgentOrchestrator(context)
-            result = await orchestrator.run_workflow(workflow, request.parameters)
+            result = await orchestrator.run_workflow(workflow, request.get_parameters())
             _workflow_jobs[job_id] = {
                 "status": "completed",
                 "workflow_id": workflow_id,
