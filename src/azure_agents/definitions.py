@@ -489,12 +489,204 @@ Focus on quick wins first, then longer-term structural improvements.""",
     tags={"category": "optimization", "priority": "high"},
 )
 
+# =============================================================================
+# NEW AGENTS (Competitor, Content, Multi-Engine, Technical, Link)
+# =============================================================================
+
+TOOL_ANALYZE_COMPETITORS = ToolDefinition(
+    name="analyze_competitors",
+    description="Analyze competitor AIO citations, rankings, and content strategy",
+    parameters=ToolParameters(
+        properties={
+            "competitors": ParameterProperty(
+                type="array",
+                description="List of competitor domains to analyze",
+                items={"type": "string"},
+            ),
+        },
+        required=[],
+    ),
+    handler="src.agents.competitor_monitor:CompetitorMonitorAgent.analyze",
+)
+
+TOOL_GENERATE_CONTENT = ToolDefinition(
+    name="generate_content",
+    description="Generate AIO-optimized content (FAQ, HowTo, listicles)",
+    parameters=ToolParameters(
+        properties={
+            "topic": ParameterProperty(type="string", description="Topic for content"),
+            "content_type": ParameterProperty(
+                type="string",
+                description="Type of content",
+                enum=["faq", "howto", "listicle", "brief"],
+            ),
+            "queries": ParameterProperty(
+                type="array",
+                description="Target search queries",
+                items={"type": "string"},
+            ),
+        },
+        required=["topic", "content_type"],
+    ),
+    handler="src.agents.content_generator:ContentGeneratorAgent.generate",
+)
+
+TOOL_CHECK_AI_ENGINES = ToolDefinition(
+    name="check_ai_engines",
+    description="Check presence across AI search engines (Google AIO, Perplexity, Bing Copilot)",
+    parameters=ToolParameters(
+        properties={
+            "queries": ParameterProperty(
+                type="array",
+                description="Queries to check across engines",
+                items={"type": "string"},
+            ),
+            "engines": ParameterProperty(
+                type="array",
+                description="Engines to check",
+                items={"type": "string"},
+            ),
+        },
+        required=["queries"],
+    ),
+    handler="src.agents.multi_engine_tracker:MultiEngineTrackerAgent.check",
+)
+
+TOOL_TECHNICAL_AUDIT = ToolDefinition(
+    name="technical_audit",
+    description="Run technical SEO audit (broken links, redirects, meta tags)",
+    parameters=ToolParameters(
+        properties={
+            "url": ParameterProperty(type="string", description="URL to audit"),
+            "max_pages": ParameterProperty(type="integer", description="Max pages to crawl"),
+        },
+        required=["url"],
+    ),
+    handler="src.agents.technical_seo:TechnicalSEOAgent.audit",
+)
+
+TOOL_FIND_LINK_OPPORTUNITIES = ToolDefinition(
+    name="find_link_opportunities",
+    description="Find citation and link building opportunities",
+    parameters=ToolParameters(
+        properties={
+            "queries": ParameterProperty(
+                type="array",
+                description="Queries to analyze for citation opportunities",
+                items={"type": "string"},
+            ),
+        },
+        required=["queries"],
+    ),
+    handler="src.agents.link_analysis:LinkAnalysisAgent.find_opportunities",
+)
+
+COMPETITOR_MONITOR_AGENT = AgentDefinition(
+    name="competitor-monitor",
+    description="Monitors competitor SEO performance and AI Overview presence",
+    instructions="""You are a competitive intelligence agent specializing in SEO and AI Overview analysis.
+
+Your role is to:
+1. Track competitor AIO citation rates
+2. Monitor competitor ranking changes
+3. Detect content and schema updates
+4. Identify competitive threats and opportunities
+5. Provide actionable competitive insights
+
+Focus on understanding WHY competitors are getting cited and how to replicate their success.""",
+    model="gpt-4o",
+    tools=[TOOL_ANALYZE_COMPETITORS, TOOL_CHECK_AIO_STATUS],
+    local_class="src.agents.competitor_monitor:CompetitorMonitorAgent",
+    tags={"category": "competitive", "priority": "high"},
+)
+
+CONTENT_GENERATOR_AGENT = AgentDefinition(
+    name="content-generator",
+    description="Generates AIO-optimized content including FAQs, HowTos, and listicles",
+    instructions="""You are a content creation specialist focused on AI Overview optimization.
+
+Your role is to:
+1. Generate FAQ content targeting specific queries
+2. Create HowTo guides with proper schema
+3. Write listicle content optimized for citation
+4. Produce content briefs for writers
+5. Optimize existing content for AIO
+
+All content should be factual, authoritative, and structured for AI citation.""",
+    model="gpt-4o",
+    tools=[TOOL_GENERATE_CONTENT, TOOL_GENERATE_FAQ],
+    local_class="src.agents.content_generator:ContentGeneratorAgent",
+    tags={"category": "content", "priority": "high"},
+)
+
+MULTI_ENGINE_TRACKER_AGENT = AgentDefinition(
+    name="multi-engine-tracker",
+    description="Tracks presence across AI search engines (Perplexity, ChatGPT, Bing Copilot)",
+    instructions="""You are a multi-engine tracking specialist.
+
+Your role is to:
+1. Monitor presence across Google AIO, Perplexity, Bing Copilot, ChatGPT
+2. Compare citation rates across engines
+3. Identify engine-specific optimization opportunities
+4. Track emerging AI search platforms
+5. Provide cross-engine visibility reports
+
+Different AI engines have different citation patterns - understand and leverage these differences.""",
+    model="gpt-4o",
+    tools=[TOOL_CHECK_AI_ENGINES, TOOL_CHECK_AIO_STATUS],
+    local_class="src.agents.multi_engine_tracker:MultiEngineTrackerAgent",
+    tags={"category": "tracking", "priority": "medium"},
+)
+
+TECHNICAL_SEO_AGENT = AgentDefinition(
+    name="technical-seo",
+    description="Audits technical SEO issues like broken links, redirects, and page speed",
+    instructions="""You are a technical SEO auditor.
+
+Your role is to:
+1. Crawl sites for broken links and errors
+2. Check redirect chains and status codes
+3. Validate robots.txt and sitemaps
+4. Audit meta tags and canonicals
+5. Identify technical barriers to AI crawling
+
+Focus on issues that impact both traditional SEO and AI agent accessibility.""",
+    model="gpt-4o",
+    tools=[TOOL_TECHNICAL_AUDIT, TOOL_VALIDATE_SCHEMA],
+    local_class="src.agents.technical_seo:TechnicalSEOAgent",
+    tags={"category": "technical", "priority": "medium"},
+)
+
+LINK_ANALYSIS_AGENT = AgentDefinition(
+    name="link-analysis",
+    description="Analyzes link opportunities and AIO citation sources",
+    instructions="""You are a link analysis and citation opportunity specialist.
+
+Your role is to:
+1. Find AIO citation opportunities based on current sources
+2. Identify unlinked brand mentions
+3. Analyze competitor backlink profiles
+4. Suggest internal linking improvements
+5. Find broken link building opportunities
+
+Focus on opportunities that could lead to AIO citations, not just traditional backlinks.""",
+    model="gpt-4o",
+    tools=[TOOL_FIND_LINK_OPPORTUNITIES, TOOL_ANALYZE_COMPETITORS],
+    local_class="src.agents.link_analysis:LinkAnalysisAgent",
+    tags={"category": "links", "priority": "medium"},
+)
+
 # All agents for easy iteration
 ALL_AGENTS = [
     SEO_ANALYST_AGENT,
     AGENT_TESTER_AGENT,
     MONITORING_AGENT,
     OPTIMIZER_AGENT,
+    COMPETITOR_MONITOR_AGENT,
+    CONTENT_GENERATOR_AGENT,
+    MULTI_ENGINE_TRACKER_AGENT,
+    TECHNICAL_SEO_AGENT,
+    LINK_ANALYSIS_AGENT,
 ]
 
 # All tools for easy iteration
@@ -511,4 +703,9 @@ ALL_TOOLS = [
     TOOL_GENERATE_SCHEMA,
     TOOL_GENERATE_FAQ,
     TOOL_OPTIMIZE_FOR_QUERY,
+    TOOL_ANALYZE_COMPETITORS,
+    TOOL_GENERATE_CONTENT,
+    TOOL_CHECK_AI_ENGINES,
+    TOOL_TECHNICAL_AUDIT,
+    TOOL_FIND_LINK_OPPORTUNITIES,
 ]

@@ -525,5 +525,177 @@ async def _list_azure_agents(connection_string: str):
         console.print(f"[red]Failed to list agents: {e}[/red]")
 
 
+# =============================================================================
+# DASHBOARD AND SCHEDULER COMMANDS
+# =============================================================================
+
+@app.command()
+def dashboard(
+    host: str = typer.Option("0.0.0.0", "--host", "-h", help="Host to bind to"),
+    port: int = typer.Option(8081, "--port", "-p", help="Port to bind to"),
+):
+    """Start the dashboard UI with charts and trends."""
+    import uvicorn
+
+    console.print(f"[green]Starting SEO Agent Dashboard on http://{host}:{port}[/green]")
+
+    uvicorn.run(
+        "src.ui.dashboard:app",
+        host=host,
+        port=port,
+    )
+
+
+@app.command()
+def scheduler(
+    action: str = typer.Argument("status", help="Action: start, stop, status, run-now"),
+    job_id: str = typer.Option(None, "--job", "-j", help="Job ID for run-now"),
+):
+    """Manage scheduled jobs."""
+    asyncio.run(_scheduler_cmd(action, job_id))
+
+
+async def _scheduler_cmd(action: str, job_id: str | None):
+    from src.scheduler.jobs import get_scheduler, DEFAULT_JOBS
+    from src.scheduler.handlers import register_all_handlers
+
+    scheduler = get_scheduler()
+
+    if action == "status":
+        jobs = scheduler.get_jobs()
+
+        if not jobs:
+            console.print("[yellow]No jobs configured. Loading defaults...[/yellow]")
+            register_all_handlers()
+            scheduler.load_default_jobs()
+            jobs = scheduler.get_jobs()
+
+        table = Table(title="Scheduled Jobs")
+        table.add_column("ID", style="cyan")
+        table.add_column("Name", style="white")
+        table.add_column("Schedule", style="green")
+        table.add_column("Next Run", style="yellow")
+        table.add_column("Enabled", style="dim")
+
+        for job in jobs:
+            schedule = job.cron or f"Every {job.interval_hours}h"
+            next_run = job.next_run.strftime("%Y-%m-%d %H:%M") if job.next_run else "N/A"
+            table.add_row(job.id, job.name, schedule, next_run, "Yes" if job.enabled else "No")
+
+        console.print(table)
+
+    elif action == "start":
+        register_all_handlers()
+        scheduler.load_default_jobs()
+        scheduler.start()
+        console.print("[green]Scheduler started[/green]")
+        console.print("[dim]Press Ctrl+C to stop[/dim]")
+
+        try:
+            while True:
+                await asyncio.sleep(1)
+        except KeyboardInterrupt:
+            scheduler.stop()
+
+    elif action == "stop":
+        scheduler.stop()
+        console.print("[yellow]Scheduler stopped[/yellow]")
+
+    elif action == "run-now":
+        if not job_id:
+            console.print("[red]Please specify --job ID[/red]")
+            return
+
+        register_all_handlers()
+        scheduler.load_default_jobs()
+
+        if scheduler.run_now(job_id):
+            console.print(f"[green]Triggered job: {job_id}[/green]")
+        else:
+            console.print(f"[red]Job not found: {job_id}[/red]")
+
+    else:
+        console.print(f"[red]Unknown action: {action}[/red]")
+
+
+# =============================================================================
+# TENANT COMMANDS
+# =============================================================================
+
+@app.command()
+def tenants(
+    action: str = typer.Argument("list", help="Action: list, create, show, delete"),
+    tenant_id: str = typer.Option(None, "--id", "-i", help="Tenant ID"),
+    name: str = typer.Option(None, "--name", "-n", help="Tenant name"),
+    domain: str = typer.Option(None, "--domain", "-d", help="Tenant domain"),
+):
+    """Manage tenants (multi-client support)."""
+    from src.multitenancy.tenant import get_tenant_manager, TenantConfig
+
+    manager = get_tenant_manager()
+
+    if action == "list":
+        tenant_list = manager.list_tenants(active_only=False)
+
+        if not tenant_list:
+            console.print("[yellow]No tenants configured[/yellow]")
+            return
+
+        table = Table(title="Tenants")
+        table.add_column("ID", style="cyan")
+        table.add_column("Name", style="white")
+        table.add_column("Domain", style="green")
+        table.add_column("Plan", style="yellow")
+        table.add_column("Active", style="dim")
+
+        for t in tenant_list:
+            table.add_row(t.id, t.name, t.domain, t.plan, "Yes" if t.active else "No")
+
+        console.print(table)
+
+    elif action == "create":
+        if not all([tenant_id, name, domain]):
+            console.print("[red]Required: --id, --name, --domain[/red]")
+            return
+
+        try:
+            tenant = manager.create_tenant(tenant_id, name, domain)
+            console.print(f"[green]Created tenant: {tenant.id}[/green]")
+        except ValueError as e:
+            console.print(f"[red]{e}[/red]")
+
+    elif action == "show":
+        if not tenant_id:
+            console.print("[red]Required: --id[/red]")
+            return
+
+        tenant = manager.get_tenant(tenant_id)
+        if not tenant:
+            console.print(f"[red]Tenant not found: {tenant_id}[/red]")
+            return
+
+        console.print(f"\n[bold cyan]{tenant.name}[/bold cyan]")
+        console.print(f"  ID: {tenant.id}")
+        console.print(f"  Domain: {tenant.domain}")
+        console.print(f"  Plan: {tenant.plan}")
+        console.print(f"  Active: {tenant.active}")
+        console.print(f"  Created: {tenant.created_at}")
+        console.print(f"  GSC Property: {tenant.config.gsc_property_url or 'Not set'}")
+        console.print(f"  Competitors: {', '.join(tenant.config.competitors) or 'None'}")
+
+    elif action == "delete":
+        if not tenant_id:
+            console.print("[red]Required: --id[/red]")
+            return
+
+        if manager.delete_tenant(tenant_id):
+            console.print(f"[yellow]Deleted tenant: {tenant_id}[/yellow]")
+        else:
+            console.print(f"[red]Tenant not found: {tenant_id}[/red]")
+
+    else:
+        console.print(f"[red]Unknown action: {action}[/red]")
+
+
 if __name__ == "__main__":
     app()
