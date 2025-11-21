@@ -12,7 +12,8 @@ import structlog
 from bs4 import BeautifulSoup
 
 from src.agents.base import BaseAgent, AgentContext
-from src.models.agents import AgentTask, AgentResult, Recommendation, Alert, Priority, Severity
+from src.core.errors import AgentError, APIError, ErrorCode
+from src.models.agents import AgentTask, AgentResult, AgentType, Recommendation, Alert, Priority, Severity
 
 logger = structlog.get_logger()
 
@@ -31,60 +32,47 @@ class TechnicalSEOAgent(BaseAgent):
     - Check for duplicate content signals
     """
 
+    agent_type = AgentType.TECHNICAL_AUDITOR
+
     def __init__(self, context: AgentContext):
-        super().__init__(
-            agent_type="technical-seo",
-            description="Audits technical SEO issues like broken links, redirects, and page speed",
-            context=context,
-        )
+        self.context = context
+        self.logger = logger.bind(agent="technical-seo")
         self._visited: set[str] = set()
         self._issues: list[dict] = []
 
-    async def run(self, task: AgentTask) -> AgentResult:
-        """Execute technical SEO task."""
-        start_time = datetime.utcnow()
+    async def execute(self, task: AgentTask) -> AgentResult:
+        """Execute technical SEO task - called by base class run() with error handling."""
         self._visited = set()
         self._issues = []
 
-        try:
-            if task.task_type == "full_audit":
-                result = await self._full_audit(task.parameters)
-            elif task.task_type == "check_broken_links":
-                result = await self._check_broken_links(task.parameters)
-            elif task.task_type == "check_redirects":
-                result = await self._check_redirects(task.parameters)
-            elif task.task_type == "validate_sitemap":
-                result = await self._validate_sitemap(task.parameters)
-            elif task.task_type == "check_robots":
-                result = await self._check_robots(task.parameters)
-            elif task.task_type == "analyze_page":
-                result = await self._analyze_page(task.parameters)
-            else:
-                return AgentResult(
-                    task_id=task.id,
-                    agent_type=self.agent_type,
-                    success=False,
-                    data={"error": f"Unknown task type: {task.task_type}"},
-                )
+        task_handlers = {
+            "full_audit": self._full_audit,
+            "check_broken_links": self._check_broken_links,
+            "check_redirects": self._check_redirects,
+            "validate_sitemap": self._validate_sitemap,
+            "check_robots": self._check_robots,
+            "analyze_page": self._analyze_page,
+        }
 
-            return AgentResult(
-                task_id=task.id,
-                agent_type=self.agent_type,
-                success=True,
-                data=result["data"],
-                recommendations=result.get("recommendations", []),
-                alerts=result.get("alerts", []),
-                execution_time_ms=int((datetime.utcnow() - start_time).total_seconds() * 1000),
+        handler = task_handlers.get(task.task_type)
+        if not handler:
+            raise AgentError(
+                f"Unknown task type: {task.task_type}",
+                agent_type="technical-seo",
+                task_type=task.task_type,
+                code=ErrorCode.VALIDATION_ERROR,
             )
 
-        except Exception as e:
-            logger.error("Technical SEO audit failed", error=str(e))
-            return AgentResult(
-                task_id=task.id,
-                agent_type=self.agent_type,
-                success=False,
-                data={"error": str(e)},
-            )
+        result = await handler(task.parameters)
+
+        return AgentResult(
+            task_id=task.id,
+            agent_type=self.agent_type,
+            success=True,
+            data=result["data"],
+            recommendations=result.get("recommendations", []),
+            alerts=result.get("alerts", []),
+        )
 
     async def _full_audit(self, params: dict[str, Any]) -> dict[str, Any]:
         """Run full technical SEO audit."""
@@ -203,8 +191,29 @@ class TechnicalSEOAgent(BaseAgent):
                     "message": "Page load timeout (>30s)",
                     "severity": "warning",
                 })
+            except httpx.ConnectError:
+                self._issues.append({
+                    "type": "connection_error",
+                    "url": url,
+                    "message": "Failed to connect to server",
+                    "severity": "critical",
+                })
+            except httpx.HTTPStatusError as e:
+                self._issues.append({
+                    "type": "http_error",
+                    "url": url,
+                    "status_code": e.response.status_code,
+                    "message": f"HTTP error: {e.response.status_code}",
+                    "severity": "warning",
+                })
             except Exception as e:
-                logger.warning("Crawl error", url=url, error=str(e))
+                self.logger.warning("Crawl error", url=url, error=str(e), error_type=type(e).__name__)
+                self._issues.append({
+                    "type": "crawl_error",
+                    "url": url,
+                    "message": f"Crawl failed: {str(e)[:100]}",
+                    "severity": "info",
+                })
 
     async def _analyze_response(self, url: str, response: httpx.Response, base_domain: str):
         """Analyze a page response for issues."""

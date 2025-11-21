@@ -16,6 +16,12 @@ class AgentType(str, Enum):
     OPTIMIZATION_RECOMMENDER = "optimization_recommender"
     MONITORING = "monitoring"
     REPORT_GENERATOR = "report_generator"
+    # New agent types
+    COMPETITOR_MONITOR = "competitor_monitor"
+    CONTENT_GENERATOR = "content_generator"
+    MULTI_ENGINE_TRACKER = "multi_engine_tracker"
+    TECHNICAL_AUDITOR = "technical_auditor"
+    LINK_ANALYZER = "link_analyzer"
 
 
 class TaskStatus(str, Enum):
