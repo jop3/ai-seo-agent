@@ -1,5 +1,7 @@
 """
 Job handlers that connect scheduled jobs to agents.
+
+Supports both individual agent execution and orchestrated workflows.
 """
 
 import structlog
@@ -15,6 +17,7 @@ from src.integrations.serp import get_serp_client
 from src.integrations.teams import TeamsNotifier
 from src.models.agents import AgentTask
 from src.scheduler.jobs import JobType, get_scheduler
+from src.orchestrator import AgentOrchestrator, get_workflow
 
 logger = structlog.get_logger()
 
@@ -56,29 +59,48 @@ async def create_agent_context() -> AgentContext:
 
 
 async def handle_full_analysis(params: dict[str, Any]) -> dict[str, Any]:
-    """Handle full SEO analysis job."""
+    """Handle full SEO analysis job using orchestrator."""
     context = await create_agent_context()
-    agent = SEOAnalystAgent(context)
 
+    # Use the full audit workflow for comprehensive analysis
+    workflow = get_workflow("full_audit")
+    if workflow:
+        orchestrator = AgentOrchestrator(context)
+        result = await orchestrator.run_workflow(workflow, params)
+
+        # Send Teams notification with workflow results
+        if context.teams_notifier:
+            severity = "critical" if result.steps_failed > 0 else "info"
+            await context.teams_notifier.send_alert(
+                title=f"{result.workflow_name} Complete",
+                message=result.executive_summary[:500],
+                severity=severity,
+                data={
+                    "steps_completed": result.steps_completed,
+                    "steps_failed": result.steps_failed,
+                    "alerts": len(result.all_alerts),
+                    "recommendations": len(result.all_recommendations),
+                    "duration_ms": result.duration_ms,
+                },
+            )
+
+        return {
+            "success": result.success,
+            "workflow_id": result.workflow_id,
+            "steps_completed": result.steps_completed,
+            "alerts": len(result.all_alerts),
+            "recommendations": len(result.all_recommendations),
+            "priority_actions": len(result.priority_actions),
+        }
+
+    # Fallback to single agent if workflow not found
+    agent = SEOAnalystAgent(context)
     task = AgentTask(
         agent_type=agent.agent_type,
         task_type="full_analysis",
         parameters=params,
     )
-
     result = await agent.run(task)
-
-    # Send Teams notification for significant findings
-    if result.alerts and context.teams_notifier:
-        await context.teams_notifier.send_alert(
-            title="Daily SEO Analysis Complete",
-            message=f"Found {len(result.alerts)} alerts and {len(result.recommendations)} recommendations",
-            severity="info",
-            data={
-                "alerts": len(result.alerts),
-                "recommendations": len(result.recommendations),
-            },
-        )
 
     return {
         "success": result.success,
