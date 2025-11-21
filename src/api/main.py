@@ -7,7 +7,7 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.api.routers import agents, analysis, health, optimizations, webhooks, workflows
+from src.api.routers import agents, analysis, health, onboarding, optimizations, webhooks, workflows
 from src.config import get_settings
 
 logger = structlog.get_logger()
@@ -56,6 +56,7 @@ def create_app() -> FastAPI:
 
     # Include routers
     app.include_router(health.router, tags=["Health"])
+    app.include_router(onboarding.router, prefix="/api/v1/onboarding", tags=["Onboarding"])
     app.include_router(analysis.router, prefix="/api/v1/analysis", tags=["Analysis"])
     app.include_router(agents.router, prefix="/api/v1/agents", tags=["Agents"])
     app.include_router(workflows.router, prefix="/api/v1/workflows", tags=["Workflows"])

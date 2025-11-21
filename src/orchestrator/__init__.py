@@ -31,6 +31,11 @@ from src.orchestrator.schemas import (
     EXAMPLE_ECOMMERCE_CONFIG,
     EXAMPLE_LOCAL_BUSINESS_CONFIG,
 )
+from src.orchestrator.onboarding import (
+    OnboardingFlow,
+    ConfigManager,
+    quick_setup,
+)
 
 __all__ = [
     # Engine
@@ -61,4 +66,8 @@ __all__ = [
     "create_full_config",
     "EXAMPLE_ECOMMERCE_CONFIG",
     "EXAMPLE_LOCAL_BUSINESS_CONFIG",
+    # Onboarding
+    "OnboardingFlow",
+    "ConfigManager",
+    "quick_setup",
 ]
