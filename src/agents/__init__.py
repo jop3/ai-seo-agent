@@ -19,6 +19,11 @@ from src.agents.eeat_analyzer import EEATAnalyzerAgent
 from src.agents.multi_platform_seo import MultiPlatformSEOAgent
 from src.agents.ai_content_analyzer import AIContentAnalyzerAgent
 from src.agents.geo_analyzer import GEOAnalyzerAgent
+from src.agents.ecommerce_seo import EcommerceSEOAgent
+from src.agents.ai_visibility_control import AIVisibilityControlAgent
+from src.agents.visual_search import VisualSearchAgent
+from src.agents.product_feed_analyzer import ProductFeedAnalyzerAgent
+from src.agents.conversational_commerce import ConversationalCommerceAgent
 
 __all__ = [
     # Base
@@ -45,4 +50,10 @@ __all__ = [
     "MultiPlatformSEOAgent",
     "AIContentAnalyzerAgent",
     "GEOAnalyzerAgent",
+    # E-commerce specialized agents
+    "EcommerceSEOAgent",
+    "AIVisibilityControlAgent",
+    "VisualSearchAgent",
+    "ProductFeedAnalyzerAgent",
+    "ConversationalCommerceAgent",
 ]

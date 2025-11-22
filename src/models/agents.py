@@ -31,6 +31,12 @@ class AgentType(str, Enum):
     MULTI_PLATFORM_SEO = "multi_platform_seo"
     AI_CONTENT_ANALYZER = "ai_content_analyzer"
     GEO_ANALYZER = "geo_analyzer"
+    # E-commerce specialized agents
+    ECOMMERCE_SEO = "ecommerce_seo"
+    AI_VISIBILITY_CONTROL = "ai_visibility_control"
+    VISUAL_SEARCH = "visual_search"
+    PRODUCT_FEED_ANALYZER = "product_feed_analyzer"
+    CONVERSATIONAL_COMMERCE = "conversational_commerce"
 
 
 class TaskStatus(str, Enum):

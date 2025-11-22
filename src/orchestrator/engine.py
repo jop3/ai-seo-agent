@@ -156,6 +156,11 @@ class AgentOrchestrator:
         from src.agents.multi_platform_seo import MultiPlatformSEOAgent
         from src.agents.ai_content_analyzer import AIContentAnalyzerAgent
         from src.agents.geo_analyzer import GEOAnalyzerAgent
+        from src.agents.ecommerce_seo import EcommerceSEOAgent
+        from src.agents.ai_visibility_control import AIVisibilityControlAgent
+        from src.agents.visual_search import VisualSearchAgent
+        from src.agents.product_feed_analyzer import ProductFeedAnalyzerAgent
+        from src.agents.conversational_commerce import ConversationalCommerceAgent
 
         self._agent_classes = {
             AgentType.SEO_ANALYST: SEOAnalystAgent,
@@ -175,6 +180,12 @@ class AgentOrchestrator:
             AgentType.MULTI_PLATFORM_SEO: MultiPlatformSEOAgent,
             AgentType.AI_CONTENT_ANALYZER: AIContentAnalyzerAgent,
             AgentType.GEO_ANALYZER: GEOAnalyzerAgent,
+            # E-commerce specialized agents
+            AgentType.ECOMMERCE_SEO: EcommerceSEOAgent,
+            AgentType.AI_VISIBILITY_CONTROL: AIVisibilityControlAgent,
+            AgentType.VISUAL_SEARCH: VisualSearchAgent,
+            AgentType.PRODUCT_FEED_ANALYZER: ProductFeedAnalyzerAgent,
+            AgentType.CONVERSATIONAL_COMMERCE: ConversationalCommerceAgent,
         }
 
     def _get_agent(self, agent_type: AgentType) -> BaseAgent:

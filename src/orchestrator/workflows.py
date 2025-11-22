@@ -538,6 +538,151 @@ GEO_OPTIMIZATION_WORKFLOW = Workflow(
 
 
 # =============================================================================
+# E-commerce Product Optimization Workflow
+# =============================================================================
+ECOMMERCE_PRODUCT_OPTIMIZATION_WORKFLOW = Workflow(
+    id="ecommerce_product_optimization",
+    name="E-commerce Product Optimization",
+    description="Comprehensive optimization for product pages: schema, feeds, descriptions, and AI shopping readiness",
+    steps=[
+        # Phase 1: Product Page Analysis
+        {
+            "agent_type": AgentType.ECOMMERCE_SEO.value,
+            "task_type": "full_ecommerce_audit",
+            "name": "product_page_audit",
+            "description": "Full e-commerce audit of product pages",
+        },
+        # Phase 2: Specialized Product Analysis (parallel)
+        {
+            "agent_type": AgentType.PRODUCT_FEED_ANALYZER.value,
+            "task_type": "full_feed_audit",
+            "name": "product_feed_analysis",
+            "description": "Product feed quality and AI platform compatibility",
+            "depends_on": ["product_page_audit"],
+            "parallel_group": "product_analysis",
+        },
+        {
+            "agent_type": AgentType.GEO_ANALYZER.value,
+            "task_type": "full_geo_audit",
+            "name": "product_geo_scoring",
+            "description": "GEO scoring for product descriptions and content",
+            "depends_on": ["product_page_audit"],
+            "parallel_group": "product_analysis",
+        },
+        {
+            "agent_type": AgentType.CONVERSATIONAL_COMMERCE.value,
+            "task_type": "full_conversational_audit",
+            "name": "voice_commerce_readiness",
+            "description": "Voice and conversational commerce optimization",
+            "depends_on": ["product_page_audit"],
+            "parallel_group": "product_analysis",
+        },
+        # Phase 3: AI Visibility Control
+        {
+            "agent_type": AgentType.AI_VISIBILITY_CONTROL.value,
+            "task_type": "full_visibility_audit",
+            "name": "ai_visibility_control",
+            "description": "AI crawler access and content visibility strategy",
+            "depends_on": ["product_feed_analysis", "product_geo_scoring", "voice_commerce_readiness"],
+        },
+        # Phase 4: Schema & Technical
+        {
+            "agent_type": AgentType.SCHEMA_GENERATOR.value,
+            "task_type": "audit_existing_schema",
+            "name": "product_schema_audit",
+            "description": "Product schema completeness for AI understanding",
+            "depends_on": ["ai_visibility_control"],
+            "parallel_group": "technical",
+        },
+        {
+            "agent_type": AgentType.TECHNICAL_AUDITOR.value,
+            "task_type": "audit_full_site",
+            "name": "technical_audit",
+            "description": "Technical SEO for e-commerce (Core Web Vitals, crawlability)",
+            "depends_on": ["ai_visibility_control"],
+            "parallel_group": "technical",
+        },
+        # Phase 5: Recommendations
+        {
+            "agent_type": AgentType.OPTIMIZATION_RECOMMENDER.value,
+            "task_type": "generate_recommendations",
+            "name": "product_optimization_recommendations",
+            "description": "Prioritized product optimization actions",
+            "depends_on": ["product_schema_audit", "technical_audit"],
+        },
+    ],
+)
+
+
+# =============================================================================
+# E-commerce Visual Commerce Workflow
+# =============================================================================
+ECOMMERCE_VISUAL_COMMERCE_WORKFLOW = Workflow(
+    id="ecommerce_visual_commerce",
+    name="E-commerce Visual Commerce Optimization",
+    description="Visual search, image optimization, and AI visual understanding for product discovery",
+    steps=[
+        # Phase 1: Visual Search Analysis
+        {
+            "agent_type": AgentType.VISUAL_SEARCH.value,
+            "task_type": "full_visual_audit",
+            "name": "visual_search_audit",
+            "description": "Complete visual search optimization audit",
+        },
+        # Phase 2: Image & Product Analysis (parallel)
+        {
+            "agent_type": AgentType.ECOMMERCE_SEO.value,
+            "task_type": "audit_product_images",
+            "name": "product_image_audit",
+            "description": "Product image quality and variety analysis",
+            "depends_on": ["visual_search_audit"],
+            "parallel_group": "visual_analysis",
+        },
+        {
+            "agent_type": AgentType.PRODUCT_FEED_ANALYZER.value,
+            "task_type": "audit_product_images_feed",
+            "name": "feed_image_audit",
+            "description": "Product feed image quality and coverage",
+            "depends_on": ["visual_search_audit"],
+            "parallel_group": "visual_analysis",
+        },
+        {
+            "agent_type": AgentType.VISUAL_SEARCH.value,
+            "task_type": "optimize_for_google_lens",
+            "name": "google_lens_optimization",
+            "description": "Google Lens specific optimization",
+            "depends_on": ["visual_search_audit"],
+            "parallel_group": "visual_analysis",
+        },
+        # Phase 3: Platform-Specific Optimization
+        {
+            "agent_type": AgentType.MULTI_PLATFORM_SEO.value,
+            "task_type": "full_platform_audit",
+            "name": "visual_platform_optimization",
+            "description": "Pinterest, Instagram, TikTok visual commerce optimization",
+            "depends_on": ["product_image_audit", "feed_image_audit", "google_lens_optimization"],
+        },
+        # Phase 4: Schema & Structured Data
+        {
+            "agent_type": AgentType.SCHEMA_GENERATOR.value,
+            "task_type": "audit_existing_schema",
+            "name": "visual_schema_audit",
+            "description": "Image schema and visual content markup",
+            "depends_on": ["visual_platform_optimization"],
+        },
+        # Phase 5: Recommendations
+        {
+            "agent_type": AgentType.OPTIMIZATION_RECOMMENDER.value,
+            "task_type": "generate_recommendations",
+            "name": "visual_commerce_recommendations",
+            "description": "Prioritized visual commerce actions",
+            "depends_on": ["visual_schema_audit"],
+        },
+    ],
+)
+
+
+# =============================================================================
 # Workflow Registry
 # =============================================================================
 WORKFLOWS: dict[str, Workflow] = {
@@ -550,6 +695,8 @@ WORKFLOWS: dict[str, Workflow] = {
     "ai_readiness": AI_READINESS_WORKFLOW,
     "ai_visibility_audit": AI_VISIBILITY_AUDIT_WORKFLOW,
     "geo_optimization": GEO_OPTIMIZATION_WORKFLOW,
+    "ecommerce_product_optimization": ECOMMERCE_PRODUCT_OPTIMIZATION_WORKFLOW,
+    "ecommerce_visual_commerce": ECOMMERCE_VISUAL_COMMERCE_WORKFLOW,
 }
 
 
