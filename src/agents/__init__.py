@@ -24,6 +24,9 @@ from src.agents.ai_visibility_control import AIVisibilityControlAgent
 from src.agents.visual_search import VisualSearchAgent
 from src.agents.product_feed_analyzer import ProductFeedAnalyzerAgent
 from src.agents.conversational_commerce import ConversationalCommerceAgent
+from src.agents.ai_mode_tracker import AIModeTrackerAgent
+from src.agents.brand_mention_analyzer import BrandMentionAnalyzerAgent
+from src.agents.ai_citation_optimizer import AICitationOptimizerAgent
 
 __all__ = [
     # Base
@@ -56,4 +59,8 @@ __all__ = [
     "VisualSearchAgent",
     "ProductFeedAnalyzerAgent",
     "ConversationalCommerceAgent",
+    # AI Mode & Citation agents
+    "AIModeTrackerAgent",
+    "BrandMentionAnalyzerAgent",
+    "AICitationOptimizerAgent",
 ]

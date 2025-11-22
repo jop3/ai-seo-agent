@@ -161,6 +161,9 @@ class AgentOrchestrator:
         from src.agents.visual_search import VisualSearchAgent
         from src.agents.product_feed_analyzer import ProductFeedAnalyzerAgent
         from src.agents.conversational_commerce import ConversationalCommerceAgent
+        from src.agents.ai_mode_tracker import AIModeTrackerAgent
+        from src.agents.brand_mention_analyzer import BrandMentionAnalyzerAgent
+        from src.agents.ai_citation_optimizer import AICitationOptimizerAgent
 
         self._agent_classes = {
             AgentType.SEO_ANALYST: SEOAnalystAgent,
@@ -186,6 +189,10 @@ class AgentOrchestrator:
             AgentType.VISUAL_SEARCH: VisualSearchAgent,
             AgentType.PRODUCT_FEED_ANALYZER: ProductFeedAnalyzerAgent,
             AgentType.CONVERSATIONAL_COMMERCE: ConversationalCommerceAgent,
+            # AI Mode & Citation agents
+            AgentType.AI_MODE_TRACKER: AIModeTrackerAgent,
+            AgentType.BRAND_MENTION_ANALYZER: BrandMentionAnalyzerAgent,
+            AgentType.AI_CITATION_OPTIMIZER: AICitationOptimizerAgent,
         }
 
     def _get_agent(self, agent_type: AgentType) -> BaseAgent:

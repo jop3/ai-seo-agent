@@ -37,6 +37,10 @@ class AgentType(str, Enum):
     VISUAL_SEARCH = "visual_search"
     PRODUCT_FEED_ANALYZER = "product_feed_analyzer"
     CONVERSATIONAL_COMMERCE = "conversational_commerce"
+    # AI Mode & Citation agents
+    AI_MODE_TRACKER = "ai_mode_tracker"
+    BRAND_MENTION_ANALYZER = "brand_mention_analyzer"
+    AI_CITATION_OPTIMIZER = "ai_citation_optimizer"
 
 
 class TaskStatus(str, Enum):
