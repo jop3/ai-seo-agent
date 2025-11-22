@@ -41,6 +41,38 @@ AI-powered SEO optimization platform for the AI Overview era. Helps businesses d
 - **Bloom Filters**: Fast cache lookups
 - **Sitemap Preloading**: Auto-discover and cache pages
 
+### 6. Multi-Framework Agent Support
+
+Choose the agent framework that best fits your needs - all with the same unified API:
+
+| Framework | Best For | Platform |
+|-----------|----------|----------|
+| **Direct LLM** | Simple workflows, rapid prototyping | Any |
+| **Google ADK** | Google Cloud users, Gemini models | Vertex AI |
+| **LangGraph** | Complex state management, graphs | LangGraph Cloud |
+| **Microsoft Agent** | Enterprise, Azure users | Azure |
+| **AWS Bedrock** | AWS users, production scale | AWS |
+| **CrewAI** | Role-based collaboration | Docker/K8s |
+
+**Unified API Example:**
+
+```python
+from src.frameworks import get_framework, FrameworkType, AgentConfig
+
+# Switch frameworks by changing just one line!
+framework = get_framework(FrameworkType.GOOGLE_ADK)  # or LANGGRAPH, CREWAI, etc.
+
+agent = framework.create_agent(AgentConfig(
+    name="SEO Analyzer",
+    role="analyst",
+    goal="Analyze SEO performance"
+))
+
+result = framework.execute_agent(agent, {"description": "Analyze example.com"})
+```
+
+See [Framework Examples](/examples/frameworks/) and [Deployment Guides](/docs/deployment/FRAMEWORK_DEPLOYMENT.md) for details.
+
 ## 🚀 Getting Started
 
 Choose your deployment path based on your needs:

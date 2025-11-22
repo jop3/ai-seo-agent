@@ -44,14 +44,18 @@ class SetupWizard:
         llm_provider = self.choose_llm_provider()
         self.config["llm_provider"] = llm_provider
 
-        # Step 3: Choose database
+        # Step 3: Choose agent framework
+        agent_framework = self.choose_agent_framework()
+        self.config["agent_framework"] = agent_framework
+
+        # Step 4: Choose database
         database = self.choose_database(platform)
         self.config["database"] = database
 
-        # Step 4: Configure services
+        # Step 5: Configure services
         self.configure_services()
 
-        # Step 5: Create configuration files
+        # Step 6: Create configuration files
         self.create_config_files()
 
         # Step 6: Set up database
@@ -162,9 +166,48 @@ class SetupWizard:
         console.print(f"\n✅ Selected: [bold green]{provider.replace('_', ' ').upper()}[/]\n")
         return provider
 
+    def choose_agent_framework(self) -> str:
+        """Let user choose agent framework."""
+        console.print("\n[bold]Step 3: Choose Agent Framework[/]\n")
+
+        table = Table(show_header=True, header_style="bold magenta")
+        table.add_column("Option", style="cyan", width=12)
+        table.add_column("Framework", style="green", width=25)
+        table.add_column("Best For", width=40)
+        table.add_column("Platform", style="yellow", width=20)
+
+        table.add_row("1", "Direct LLM", "Simple workflows, rapid prototyping", "Any")
+        table.add_row("2", "Google ADK", "Google Cloud, Gemini models", "Vertex AI")
+        table.add_row("3", "LangGraph", "Complex state management, graphs", "LangGraph Cloud")
+        table.add_row("4", "Microsoft Agent", "Enterprise, Azure integration", "Azure")
+        table.add_row("5", "AWS Bedrock", "AWS users, production scale", "AWS")
+        table.add_row("6", "CrewAI", "Role-based collaboration", "Docker/K8s")
+
+        console.print(table)
+        console.print("\n[dim]💡 Tip: For most users, 'Direct LLM' is the simplest option. See /examples/frameworks/ for detailed comparisons.[/]\n")
+
+        choice = Prompt.ask(
+            "\n[cyan]Choose agent framework[/]",
+            choices=["1", "2", "3", "4", "5", "6"],
+            default="1"
+        )
+
+        frameworks = {
+            "1": "direct_llm",
+            "2": "google_adk",
+            "3": "langgraph",
+            "4": "microsoft_agent",
+            "5": "aws_bedrock",
+            "6": "crewai"
+        }
+
+        framework = frameworks[choice]
+        console.print(f"\n✅ Selected: [bold green]{framework.replace('_', ' ').upper()}[/]\n")
+        return framework
+
     def choose_database(self, platform: str) -> str:
         """Let user choose database."""
-        console.print("\n[bold]Step 3: Choose Database[/]\n")
+        console.print("\n[bold]Step 4: Choose Database[/]\n")
 
         # Platform-specific defaults
         if platform == "vercel":
@@ -399,6 +442,27 @@ class SetupWizard:
         elif self.config["llm_provider"] == "ollama":
             env_content += f"OLLAMA_ENDPOINT={self.config.get('ollama_endpoint', 'http://localhost:11434')}\n"
             env_content += f"OLLAMA_MODEL={self.config.get('ollama_model', 'llama3')}\n"
+
+        # Agent Framework Configuration
+        env_content += "\n# Agent Framework\n"
+        agent_framework = self.config.get("agent_framework", "direct_llm")
+        env_content += f"AGENT_FRAMEWORK={agent_framework}\n"
+
+        if agent_framework == "google_adk":
+            env_content += f"# Google ADK Configuration\n"
+            env_content += f"GCP_PROJECT_ID={self.config.get('gcp_project_id', '')}\n"
+            env_content += f"GCP_LOCATION={self.config.get('gcp_location', 'us-central1')}\n"
+        elif agent_framework == "langgraph":
+            env_content += f"# LangGraph Configuration\n"
+            env_content += f"LANGCHAIN_API_KEY={self.config.get('langchain_api_key', '')}\n"
+            env_content += f"LANGCHAIN_PROJECT={self.config.get('langchain_project', 'seo-agent')}\n"
+        elif agent_framework == "microsoft_agent":
+            env_content += f"# Microsoft Agent Framework - uses Azure OpenAI config above\n"
+        elif agent_framework == "aws_bedrock":
+            env_content += f"# AWS Bedrock Configuration\n"
+            env_content += f"AWS_REGION={self.config.get('aws_region', 'us-east-1')}\n"
+        elif agent_framework == "crewai":
+            env_content += f"# CrewAI - uses LLM provider config above\n"
 
         # Database Configuration
         env_content += "\n# Database\n"
