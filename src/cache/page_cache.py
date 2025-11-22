@@ -146,6 +146,7 @@ class CacheEntry:
     expires_at: datetime
     size_bytes: int
     hit_count: int = 0
+    last_accessed_at: datetime = field(default_factory=datetime.utcnow)
 
 
 class PageCache:
@@ -224,6 +225,7 @@ class PageCache:
             self._total_hits += 1
             entry.hit_count += 1
             entry.data.hit_count += 1
+            entry.last_accessed_at = datetime.utcnow()  # Update for LRU
 
             # Decompress if needed
             if hasattr(entry.data, '_is_compressed') and entry.data._is_compressed:
@@ -273,7 +275,7 @@ class PageCache:
         with self._lock:
             # Check cache size limits
             if len(self._cache) >= self.config.max_entries:
-                self._evict_oldest()
+                self._evict_lru()
 
             # Compress if enabled
             html_data = data.html
@@ -358,16 +360,22 @@ class PageCache:
             # Low traffic - use base TTL
             return base_ttl
 
-    def _evict_oldest(self) -> None:
-        """Evict oldest cache entry to make room."""
+    def _evict_lru(self) -> None:
+        """Evict least recently used cache entry to make room (LRU policy)."""
         if not self._cache:
             return
 
-        # Find oldest entry
-        oldest_key = min(self._cache.keys(), key=lambda k: self._cache[k].created_at)
-        del self._cache[oldest_key]
+        # Find least recently used entry
+        lru_key = min(self._cache.keys(), key=lambda k: self._cache[k].last_accessed_at)
+        evicted_entry = self._cache[lru_key]
+        del self._cache[lru_key]
         self._total_evictions += 1
-        logger.debug("Cache eviction", cache_key=oldest_key)
+        logger.debug(
+            "LRU cache eviction",
+            cache_key=lru_key,
+            hit_count=evicted_entry.hit_count,
+            age_seconds=(datetime.utcnow() - evicted_entry.created_at).total_seconds(),
+        )
 
     def invalidate(self, url: str, params: Optional[dict[str, Any]] = None) -> bool:
         """
