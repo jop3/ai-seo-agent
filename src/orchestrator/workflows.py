@@ -429,6 +429,14 @@ AI_VISIBILITY_AUDIT_WORKFLOW = Workflow(
         },
         # Phase 4: Optimization Opportunities (parallel)
         {
+            "agent_type": AgentType.GEO_ANALYZER.value,
+            "task_type": "full_geo_audit",
+            "name": "geo_scoring",
+            "description": "GEO score and citation likelihood analysis",
+            "depends_on": ["authority_assessment"],
+            "parallel_group": "optimization",
+        },
+        {
             "agent_type": AgentType.SCHEMA_GENERATOR.value,
             "task_type": "optimize_for_ai",
             "name": "knowledge_graph_optimization",
@@ -459,10 +467,71 @@ AI_VISIBILITY_AUDIT_WORKFLOW = Workflow(
             "name": "ai_visibility_strategy",
             "description": "Strategic actions for AI visibility improvement",
             "depends_on": [
+                "geo_scoring",
                 "knowledge_graph_optimization",
                 "content_ai_readiness",
                 "semantic_optimization",
             ],
+        },
+    ],
+)
+
+
+# =============================================================================
+# GEO Optimization Workflow (Focused GEO)
+# =============================================================================
+GEO_OPTIMIZATION_WORKFLOW = Workflow(
+    id="geo_optimization",
+    name="GEO Optimization (Generative Engine Optimization)",
+    description="Focused workflow for optimizing content to be cited in AI-generated answers",
+    steps=[
+        # Phase 1: GEO Audit
+        {
+            "agent_type": AgentType.GEO_ANALYZER.value,
+            "task_type": "full_geo_audit",
+            "name": "geo_audit",
+            "description": "Analyze content for GEO factors and citation likelihood",
+        },
+        # Phase 2: Supporting Analysis (parallel)
+        {
+            "agent_type": AgentType.EEAT_ANALYZER.value,
+            "task_type": "full_eeat_audit",
+            "name": "eeat_for_geo",
+            "description": "E-E-A-T signals that boost AI citation trust",
+            "depends_on": ["geo_audit"],
+            "parallel_group": "supporting",
+        },
+        {
+            "agent_type": AgentType.SCHEMA_GENERATOR.value,
+            "task_type": "audit_existing_schema",
+            "name": "schema_for_geo",
+            "description": "Schema audit for knowledge graph visibility",
+            "depends_on": ["geo_audit"],
+            "parallel_group": "supporting",
+        },
+        {
+            "agent_type": AgentType.AI_CONTENT_ANALYZER.value,
+            "task_type": "analyze_site_content",
+            "name": "content_structure",
+            "description": "Content structure analysis for AI comprehension",
+            "depends_on": ["geo_audit"],
+            "parallel_group": "supporting",
+        },
+        # Phase 3: GEO vs SEO Comparison
+        {
+            "agent_type": AgentType.GEO_ANALYZER.value,
+            "task_type": "geo_vs_seo",
+            "name": "geo_seo_comparison",
+            "description": "Compare GEO and SEO performance",
+            "depends_on": ["eeat_for_geo", "schema_for_geo", "content_structure"],
+        },
+        # Phase 4: Optimization Recommendations
+        {
+            "agent_type": AgentType.OPTIMIZATION_RECOMMENDER.value,
+            "task_type": "generate_recommendations",
+            "name": "geo_recommendations",
+            "description": "Generate prioritized GEO optimization actions",
+            "depends_on": ["geo_seo_comparison"],
         },
     ],
 )
@@ -480,6 +549,7 @@ WORKFLOWS: dict[str, Workflow] = {
     "local_seo": LOCAL_SEO_WORKFLOW,
     "ai_readiness": AI_READINESS_WORKFLOW,
     "ai_visibility_audit": AI_VISIBILITY_AUDIT_WORKFLOW,
+    "geo_optimization": GEO_OPTIMIZATION_WORKFLOW,
 }
 
 

@@ -18,6 +18,7 @@ from src.agents.local_seo import LocalSEOAgent
 from src.agents.eeat_analyzer import EEATAnalyzerAgent
 from src.agents.multi_platform_seo import MultiPlatformSEOAgent
 from src.agents.ai_content_analyzer import AIContentAnalyzerAgent
+from src.agents.geo_analyzer import GEOAnalyzerAgent
 
 __all__ = [
     # Base
@@ -43,4 +44,5 @@ __all__ = [
     "EEATAnalyzerAgent",
     "MultiPlatformSEOAgent",
     "AIContentAnalyzerAgent",
+    "GEOAnalyzerAgent",
 ]

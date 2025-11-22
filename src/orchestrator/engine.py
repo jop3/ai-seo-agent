@@ -155,6 +155,7 @@ class AgentOrchestrator:
         from src.agents.eeat_analyzer import EEATAnalyzerAgent
         from src.agents.multi_platform_seo import MultiPlatformSEOAgent
         from src.agents.ai_content_analyzer import AIContentAnalyzerAgent
+        from src.agents.geo_analyzer import GEOAnalyzerAgent
 
         self._agent_classes = {
             AgentType.SEO_ANALYST: SEOAnalystAgent,
@@ -173,6 +174,7 @@ class AgentOrchestrator:
             AgentType.EEAT_ANALYZER: EEATAnalyzerAgent,
             AgentType.MULTI_PLATFORM_SEO: MultiPlatformSEOAgent,
             AgentType.AI_CONTENT_ANALYZER: AIContentAnalyzerAgent,
+            AgentType.GEO_ANALYZER: GEOAnalyzerAgent,
         }
 
     def _get_agent(self, agent_type: AgentType) -> BaseAgent:

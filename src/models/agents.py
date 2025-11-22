@@ -30,6 +30,7 @@ class AgentType(str, Enum):
     EEAT_ANALYZER = "eeat_analyzer"
     MULTI_PLATFORM_SEO = "multi_platform_seo"
     AI_CONTENT_ANALYZER = "ai_content_analyzer"
+    GEO_ANALYZER = "geo_analyzer"
 
 
 class TaskStatus(str, Enum):
