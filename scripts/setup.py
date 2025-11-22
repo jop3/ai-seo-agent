@@ -4,18 +4,15 @@ Interactive Setup Script for AI SEO Agent
 Helps configure and deploy to various backends.
 """
 
-import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Optional
 
 try:
     from rich.console import Console
     from rich.prompt import Prompt, Confirm
     from rich.panel import Panel
     from rich.table import Table
-    from rich import print as rprint
 except ImportError:
     print("Installing required dependencies...")
     subprocess.check_call([sys.executable, "-m", "pip", "install", "rich", "-q"])
@@ -23,7 +20,6 @@ except ImportError:
     from rich.prompt import Prompt, Confirm
     from rich.panel import Panel
     from rich.table import Table
-    from rich import print as rprint
 
 console = Console()
 
@@ -386,9 +382,9 @@ class SetupWizard:
         # LLM Configuration
         env_content += "# LLM Provider\n"
         if self.config["llm_provider"] == "docker_model_runner":
-            env_content += f"# Docker Model Runner - Local LLM\n"
+            env_content += "# Docker Model Runner - Local LLM\n"
             env_content += f"OPENAI_API_BASE={self.config.get('docker_model_endpoint', 'http://llm:8080/v1')}\n"
-            env_content += f"OPENAI_API_KEY=not-needed\n"
+            env_content += "OPENAI_API_KEY=not-needed\n"
             env_content += f"# Model: {self.config.get('docker_model', 'ai/phi3-mini-4k-instruct')}\n"
         elif self.config["llm_provider"] == "openai":
             env_content += f"OPENAI_API_KEY={self.config.get('openai_api_key', '')}\n"
