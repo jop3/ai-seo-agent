@@ -1,6 +1,10 @@
 # Multi-Backend Deployment Guide
 
-This guide shows how to deploy the AI SEO agent on different cloud platforms and backends, moving away from Azure if needed.
+This guide shows how to deploy the AI SEO agent on different cloud platforms and backends.
+
+> **📘 For Azure deployment**, see the dedicated [Azure Deployment Guide](AZURE_DEPLOYMENT.md) which provides comprehensive Azure-specific instructions including Azure OpenAI, Cosmos DB, Container Apps, and more.
+
+This document covers alternative platforms if you prefer to deploy outside of Azure.
 
 ## Current Azure Dependencies
 

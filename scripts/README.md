@@ -27,11 +27,11 @@ python3 scripts/setup.py
 ```
 
 The wizard will help you:
-- **Choose deployment platform** (Vercel, AWS, GCP, Docker, Railway, Fly.io)
+- **Choose deployment platform** (Azure, Vercel, AWS, GCP, Docker, Railway, Fly.io)
 - **Select LLM provider** (OpenAI, Anthropic, Gemini, Azure OpenAI, Ollama)
-- **Configure database** (PostgreSQL, MongoDB, SQLite, MySQL)
+- **Configure database** (PostgreSQL, MongoDB, SQLite, MySQL, Cosmos DB)
 - **Set up API keys** and credentials
-- **Generate configuration files** (.env, docker-compose.yml, vercel.json, etc.)
+- **Generate configuration files** (.env, docker-compose.yml, vercel.json, azure/parameters.json, etc.)
 - **Initialize database schema**
 - **Get deployment instructions** specific to your platform
 
@@ -41,6 +41,7 @@ The wizard will help you:
 
 | Platform | Difficulty | Best For | Setup Time |
 |----------|-----------|----------|------------|
+| **Azure** | ⭐⭐⭐ Advanced | Enterprise, integrated AI | 20-30 min |
 | **Vercel** | ⭐ Easy | Quick MVP, serverless | 5 min |
 | **Railway** | ⭐ Easy | Quick deployment | 5 min |
 | **Docker Compose** | ⭐⭐ Medium | Self-hosted | 10 min |
@@ -100,6 +101,23 @@ If you prefer manual setup or need custom configuration:
    ```
 
 ## Example Setups
+
+### Azure + Azure OpenAI + Cosmos DB
+
+```bash
+# Run setup wizard
+python3 scripts/setup.py
+
+# Choose:
+# 1. Platform: Azure
+# 2. LLM: Azure OpenAI
+# 3. Database: PostgreSQL or Cosmos DB
+
+# Deploy with automation script
+./scripts/azure-deploy.sh
+
+# Or deploy manually - see AZURE_DEPLOYMENT.md
+```
 
 ### Vercel + OpenAI + Vercel Postgres
 
@@ -216,7 +234,8 @@ After setup:
 
 ## Additional Resources
 
-- [Deployment Backends Guide](../DEPLOYMENT_BACKENDS.md) - Detailed deployment instructions
+- [Azure Deployment Guide](../AZURE_DEPLOYMENT.md) - Complete Azure setup guide
+- [Deployment Backends Guide](../DEPLOYMENT_BACKENDS.md) - Detailed deployment instructions for other platforms
 - [Performance Optimizations](../PERFORMANCE_OPTIMIZATIONS.md) - Performance tuning guide
 - [Main README](../README.md) - Project overview
 

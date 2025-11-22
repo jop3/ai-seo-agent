@@ -94,28 +94,30 @@ class SetupWizard:
         table.add_column("Best For", width=30)
         table.add_column("Difficulty", style="yellow", width=15)
 
-        table.add_row("1", "Vercel", "Quick MVP, serverless", "⭐ Easy")
-        table.add_row("2", "AWS", "Enterprise, full control", "⭐⭐⭐ Advanced")
-        table.add_row("3", "Google Cloud", "Enterprise, AI/ML", "⭐⭐⭐ Advanced")
-        table.add_row("4", "Docker Compose", "Self-hosted, full control", "⭐⭐ Medium")
-        table.add_row("5", "Railway.app", "Quick deployment", "⭐ Easy")
-        table.add_row("6", "Fly.io", "Global edge deployment", "⭐⭐ Medium")
+        table.add_row("1", "Azure", "Enterprise, integrated AI", "⭐⭐⭐ Advanced")
+        table.add_row("2", "Vercel", "Quick MVP, serverless", "⭐ Easy")
+        table.add_row("3", "AWS", "Enterprise, full control", "⭐⭐⭐ Advanced")
+        table.add_row("4", "Google Cloud", "Enterprise, AI/ML", "⭐⭐⭐ Advanced")
+        table.add_row("5", "Docker Compose", "Self-hosted, full control", "⭐⭐ Medium")
+        table.add_row("6", "Railway.app", "Quick deployment", "⭐ Easy")
+        table.add_row("7", "Fly.io", "Global edge deployment", "⭐⭐ Medium")
 
         console.print(table)
 
         choice = Prompt.ask(
             "\n[cyan]Choose platform[/]",
-            choices=["1", "2", "3", "4", "5", "6"],
+            choices=["1", "2", "3", "4", "5", "6", "7"],
             default="1"
         )
 
         platforms = {
-            "1": "vercel",
-            "2": "aws",
-            "3": "gcp",
-            "4": "docker",
-            "5": "railway",
-            "6": "fly"
+            "1": "azure",
+            "2": "vercel",
+            "3": "aws",
+            "4": "gcp",
+            "5": "docker",
+            "6": "railway",
+            "7": "fly"
         }
 
         platform = platforms[choice]
@@ -165,6 +167,8 @@ class SetupWizard:
         # Platform-specific defaults
         if platform == "vercel":
             recommended = "Vercel Postgres (recommended)"
+        elif platform == "azure":
+            recommended = "Azure Cosmos DB or Azure PostgreSQL (recommended)"
         elif platform in ["aws", "gcp"]:
             recommended = "Managed PostgreSQL (recommended)"
         else:
@@ -281,7 +285,9 @@ class SetupWizard:
             self.create_env_file()
 
             # Create platform-specific files
-            if self.config["platform"] == "vercel":
+            if self.config["platform"] == "azure":
+                self.create_azure_config()
+            elif self.config["platform"] == "vercel":
                 self.create_vercel_config()
             elif self.config["platform"] == "docker":
                 self.create_docker_compose()
@@ -402,6 +408,31 @@ volumes:
         compose_path.write_text(compose_content)
         console.print(f"  • Created [green]{compose_path}[/]")
 
+    def create_azure_config(self):
+        """Create Azure Bicep configuration."""
+        # Create Azure deployment parameters
+        params_content = """{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "appName": {
+      "value": "seo-agent"
+    },
+    "location": {
+      "value": "eastus"
+    },
+    "openaiDeploymentName": {
+      "value": "gpt-4o"
+    }
+  }
+}
+"""
+        params_path = self.root_dir / "azure" / "parameters.json"
+        params_path.parent.mkdir(exist_ok=True)
+        params_path.write_text(params_content)
+        console.print(f"  • Created [green]{params_path}[/]")
+        console.print("  • For full Azure setup, see [yellow]AZURE_DEPLOYMENT.md[/]")
+
     def create_aws_config(self):
         """Create AWS Terraform configuration."""
         # Placeholder - would create full Terraform config
@@ -513,7 +544,29 @@ CREATE INDEX idx_agent_results_url ON agent_results(url);
 
         platform = self.config["platform"]
 
-        if platform == "vercel":
+        if platform == "azure":
+            panel = Panel(
+                "[bold cyan]Azure Deployment[/]\n\n"
+                "Full deployment guide: [yellow]AZURE_DEPLOYMENT.md[/]\n\n"
+                "Quick start:\n\n"
+                "1. Install Azure CLI:\n"
+                "   [yellow]curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash[/]\n\n"
+                "2. Login to Azure:\n"
+                "   [yellow]az login[/]\n\n"
+                "3. Create resource group:\n"
+                "   [yellow]az group create --name ai-seo-agent-rg --location eastus[/]\n\n"
+                "4. Run deployment script:\n"
+                "   [yellow]./scripts/azure-deploy.sh[/]\n\n"
+                "5. Set environment variables in Azure Portal or Key Vault\n\n"
+                "[dim]See AZURE_DEPLOYMENT.md for complete setup including:\n"
+                "• Azure OpenAI configuration\n"
+                "• Cosmos DB or Azure PostgreSQL\n"
+                "• Managed Identity setup\n"
+                "• CI/CD pipelines[/]",
+                border_style="cyan"
+            )
+
+        elif platform == "vercel":
             panel = Panel(
                 "[bold cyan]Vercel Deployment[/]\n\n"
                 "1. Install Vercel CLI:\n"
@@ -600,7 +653,8 @@ CREATE INDEX idx_agent_results_url ON agent_results(url);
             "3. Test your deployment\n"
             "4. Check the dashboard: /api/v1/performance/stats\n\n"
             "[dim]For detailed documentation, see:[/]\n"
-            "• DEPLOYMENT_BACKENDS.md\n"
+            "• AZURE_DEPLOYMENT.md (Azure platform)\n"
+            "• DEPLOYMENT_BACKENDS.md (Other platforms)\n"
             "• PERFORMANCE_OPTIMIZATIONS.md\n"
             "• README.md",
             title="Success",
