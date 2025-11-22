@@ -130,34 +130,40 @@ class SetupWizard:
 
         table = Table(show_header=True, header_style="bold magenta")
         table.add_column("Option", style="cyan", width=12)
-        table.add_column("Provider", style="green", width=20)
+        table.add_column("Provider", style="green", width=25)
         table.add_column("Model", width=30)
-        table.add_column("Cost/1M tokens", style="yellow", width=15)
+        table.add_column("Cost", style="yellow", width=15)
 
-        table.add_row("1", "OpenAI", "GPT-4o", "$2.50-$10")
-        table.add_row("2", "Anthropic Claude", "Claude 3.5 Sonnet", "$3-$15")
-        table.add_row("3", "Google Gemini", "Gemini Pro", "$0.50-$2")
-        table.add_row("4", "Azure OpenAI", "GPT-4o", "$2.50-$10")
-        table.add_row("5", "Local (Ollama)", "Llama 3/Mixtral", "Free")
+        table.add_row("1", "Docker Model Runner", "Llama/Phi/Gemma (local)", "Free ⚡")
+        table.add_row("2", "OpenAI", "GPT-4o", "$2.50-$10")
+        table.add_row("3", "Anthropic Claude", "Claude 3.5 Sonnet", "$3-$15")
+        table.add_row("4", "Google Gemini", "Gemini Pro", "$0.50-$2")
+        table.add_row("5", "Azure OpenAI", "GPT-4o", "$2.50-$10")
+        table.add_row("6", "Local (Ollama)", "Llama 3/Mixtral", "Free")
 
         console.print(table)
 
+        # Show hardware recommendation if Docker platform
+        if self.config.get("platform") == "docker":
+            console.print("\n[dim]💡 Tip: Run [yellow]python3 scripts/analyze_hardware.py[/] to see which models your system can run[/]\n")
+
         choice = Prompt.ask(
             "\n[cyan]Choose LLM provider[/]",
-            choices=["1", "2", "3", "4", "5"],
+            choices=["1", "2", "3", "4", "5", "6"],
             default="1"
         )
 
         providers = {
-            "1": "openai",
-            "2": "anthropic",
-            "3": "gemini",
-            "4": "azure_openai",
-            "5": "ollama"
+            "1": "docker_model_runner",
+            "2": "openai",
+            "3": "anthropic",
+            "4": "gemini",
+            "5": "azure_openai",
+            "6": "ollama"
         }
 
         provider = providers[choice]
-        console.print(f"\n✅ Selected: [bold green]{provider.upper()}[/]\n")
+        console.print(f"\n✅ Selected: [bold green]{provider.replace('_', ' ').upper()}[/]\n")
         return provider
 
     def choose_database(self, platform: str) -> str:
@@ -208,8 +214,79 @@ class SetupWizard:
         console.print("\n[bold]Step 4: Configure Services[/]\n")
 
         # LLM API Key
-        console.print(f"[cyan]Configure {self.config['llm_provider'].upper()} API Key:[/]")
-        if self.config["llm_provider"] == "openai":
+        provider_name = self.config['llm_provider'].replace('_', ' ').upper()
+        console.print(f"[cyan]Configure {provider_name}:[/]")
+
+        if self.config["llm_provider"] == "docker_model_runner":
+            # Use hardware analysis to recommend models
+            console.print("[dim]Analyzing system to recommend models...[/]\n")
+            try:
+                from scripts.analyze_hardware import get_system_specs, get_model_recommendations
+
+                specs = get_system_specs()
+                recommendations = get_model_recommendations(specs)
+
+                # Show available models
+                console.print("[bold]Available Models:[/]\n")
+
+                model_options = {}
+                idx = 1
+
+                # Show fast models
+                if recommendations["fast"]:
+                    console.print("[cyan]⚡ Fast Models:[/]")
+                    for model in recommendations["fast"][:2]:
+                        if model.provider == "docker_model_runner":
+                            console.print(f"  {idx}. {model.name} - {model.description}")
+                            model_options[str(idx)] = model.identifier
+                            idx += 1
+
+                # Show balanced models
+                if recommendations["balanced"]:
+                    console.print("\n[cyan]⚖️  Balanced Models (Recommended):[/]")
+                    for model in recommendations["balanced"][:2]:
+                        if model.provider == "docker_model_runner":
+                            console.print(f"  {idx}. {model.name} - {model.description}")
+                            model_options[str(idx)] = model.identifier
+                            idx += 1
+
+                # Show smart models
+                if recommendations["smart"]:
+                    console.print("\n[cyan]🧠 Smart Models:[/]")
+                    for model in recommendations["smart"][:2]:
+                        if model.provider == "docker_model_runner":
+                            console.print(f"  {idx}. {model.name} - {model.description}")
+                            model_options[str(idx)] = model.identifier
+                            idx += 1
+
+                if not model_options:
+                    # Fallback
+                    model_options = {
+                        "1": "ai/smollm2-360m-instruct",
+                        "2": "ai/phi3-mini-4k-instruct",
+                        "3": "ai/llama3.2-3b-instruct"
+                    }
+                    console.print("1. SmolLM2 360M - Small and fast")
+                    console.print("2. Phi-3 Mini - Balanced")
+                    console.print("3. Llama 3.2 3B - Best quality")
+
+                model_choice = Prompt.ask(
+                    "\n[cyan]Choose model[/]",
+                    choices=list(model_options.keys()),
+                    default="2"
+                )
+                self.config["docker_model"] = model_options[model_choice]
+                self.config["docker_model_endpoint"] = "http://llm:8080/v1"
+
+                console.print(f"\n✅ Selected: [green]{model_options[model_choice]}[/]")
+
+            except Exception as e:
+                console.print(f"[yellow]Could not analyze hardware: {e}[/]")
+                console.print("[dim]Using default model...[/]")
+                self.config["docker_model"] = "ai/phi3-mini-4k-instruct"
+                self.config["docker_model_endpoint"] = "http://llm:8080/v1"
+
+        elif self.config["llm_provider"] == "openai":
             api_key = Prompt.ask("OpenAI API Key (sk-...)", password=True)
             self.config["openai_api_key"] = api_key
         elif self.config["llm_provider"] == "anthropic":
@@ -308,7 +385,12 @@ class SetupWizard:
 
         # LLM Configuration
         env_content += "# LLM Provider\n"
-        if self.config["llm_provider"] == "openai":
+        if self.config["llm_provider"] == "docker_model_runner":
+            env_content += f"# Docker Model Runner - Local LLM\n"
+            env_content += f"OPENAI_API_BASE={self.config.get('docker_model_endpoint', 'http://llm:8080/v1')}\n"
+            env_content += f"OPENAI_API_KEY=not-needed\n"
+            env_content += f"# Model: {self.config.get('docker_model', 'ai/phi3-mini-4k-instruct')}\n"
+        elif self.config["llm_provider"] == "openai":
             env_content += f"OPENAI_API_KEY={self.config.get('openai_api_key', '')}\n"
         elif self.config["llm_provider"] == "anthropic":
             env_content += f"ANTHROPIC_API_KEY={self.config.get('anthropic_api_key', '')}\n"
@@ -367,7 +449,69 @@ class SetupWizard:
 
     def create_docker_compose(self):
         """Create Docker Compose configuration."""
-        compose_content = """version: '3.8'
+
+        # Check if using Docker Model Runner
+        use_model_runner = self.config.get("llm_provider") == "docker_model_runner"
+        model_name = self.config.get("docker_model", "ai/phi3-mini-4k-instruct")
+
+        if use_model_runner:
+            compose_content = f"""version: '3.8'
+
+services:
+  # Local LLM via Docker Model Runner
+  llm:
+    image: {model_name}
+    ports:
+      - "8080:8080"
+    environment:
+      - MODEL_ID={model_name}
+    # Uncomment for GPU support (NVIDIA)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_BASE=http://llm:8080/v1
+      - OPENAI_API_KEY=not-needed
+      - POSTGRES_URL=postgresql://postgres:postgres@db:5432/seoagent
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - llm
+      - db
+      - redis
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: seoagent
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data:
+  redis_data:
+"""
+        else:
+            compose_content = """version: '3.8'
 
 services:
   api:
@@ -407,6 +551,10 @@ volumes:
         compose_path = self.root_dir / "docker-compose.yml"
         compose_path.write_text(compose_content)
         console.print(f"  • Created [green]{compose_path}[/]")
+
+        if use_model_runner:
+            console.print(f"  • LLM Model: [yellow]{model_name}[/]")
+            console.print("  • [dim]Model will be auto-downloaded on first run[/]")
 
     def create_azure_config(self):
         """Create Azure Bicep configuration."""
@@ -580,16 +728,28 @@ CREATE INDEX idx_agent_results_url ON agent_results(url);
             )
 
         elif platform == "docker":
-            panel = Panel(
+            docker_msg = (
                 "[bold cyan]Docker Compose Deployment[/]\n\n"
                 "1. Build and start:\n"
                 "   [yellow]docker-compose up -d[/]\n\n"
                 "2. View logs:\n"
                 "   [yellow]docker-compose logs -f api[/]\n\n"
                 "3. Access API:\n"
-                "   [yellow]http://localhost:8000[/]",
-                border_style="cyan"
+                "   [yellow]http://localhost:8000[/]"
             )
+
+            # Add Docker Model Runner note if using it
+            if self.config.get("llm_provider") == "docker_model_runner":
+                model = self.config.get("docker_model", "ai/phi3-mini-4k-instruct")
+                docker_msg += (
+                    f"\n\n[dim]📝 Using Docker Model Runner:[/]\n"
+                    f"  • Model: [yellow]{model}[/]\n"
+                    f"  • Model will auto-download on first start (may take 2-5 min)\n"
+                    f"  • Requires Docker Desktop 4.41+\n"
+                    f"  • View model logs: [yellow]docker-compose logs -f llm[/]"
+                )
+
+            panel = Panel(docker_msg, border_style="cyan")
 
         elif platform == "railway":
             panel = Panel(
