@@ -31,6 +31,7 @@ from src.agents.community_research import CommunityResearchAgent
 from src.agents.rapid_indexing import RapidIndexingAgent
 from src.agents.content_gap_analyzer import ContentGapAnalyzerAgent
 from src.agents.meta_ctr_optimizer import MetaCTROptimizerAgent
+from src.agents.page_analyzer import PageAnalyzerAgent
 
 __all__ = [
     # Base
@@ -72,4 +73,6 @@ __all__ = [
     "RapidIndexingAgent",
     "ContentGapAnalyzerAgent",
     "MetaCTROptimizerAgent",
+    # Performance optimization
+    "PageAnalyzerAgent",
 ]

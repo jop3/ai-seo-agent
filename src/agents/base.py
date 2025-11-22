@@ -33,6 +33,7 @@ from src.integrations.ahrefs import AhrefsClient
 from src.integrations.bing import BingClient
 from src.integrations.wayback import WaybackClient
 from src.models.agents import AgentResult, AgentTask, AgentType, Alert, Recommendation, Severity
+from src.cache.page_cache import PageData, get_cache
 
 logger = structlog.get_logger()
 
@@ -73,6 +74,41 @@ class BaseAgent(ABC):
     def __init__(self, context: AgentContext):
         self.context = context
         self.logger = logger.bind(agent=self.agent_type.value)
+        self.page_cache = get_cache()  # Global page cache
+
+    # Page cache helper methods
+    def get_cached_page(self, url: str) -> PageData | None:
+        """
+        Get cached page data if available.
+
+        Returns None if not cached or expired. Agents can use this
+        to avoid redundant HTTP requests.
+
+        Example:
+            page_data = self.get_cached_page("https://example.com")
+            if page_data:
+                # Use cached data
+                title = page_data.meta_title
+            else:
+                # Fetch fresh (or use PageAnalyzer agent)
+                ...
+        """
+        return self.page_cache.get(url)
+
+    def cache_page(self, url: str, page_data: PageData, ttl: int | None = None) -> None:
+        """
+        Cache page data for reuse by other agents.
+
+        Args:
+            url: Page URL
+            page_data: Extracted page data
+            ttl: Time-to-live in seconds (optional)
+        """
+        self.page_cache.set(url, page_data, ttl=ttl)
+
+    def invalidate_page_cache(self, url: str) -> bool:
+        """Invalidate cached page data (force refresh on next access)."""
+        return self.page_cache.invalidate(url)
 
     @abstractmethod
     async def execute(self, task: AgentTask) -> AgentResult:

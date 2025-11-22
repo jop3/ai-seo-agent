@@ -168,6 +168,7 @@ class AgentOrchestrator:
         from src.agents.rapid_indexing import RapidIndexingAgent
         from src.agents.content_gap_analyzer import ContentGapAnalyzerAgent
         from src.agents.meta_ctr_optimizer import MetaCTROptimizerAgent
+        from src.agents.page_analyzer import PageAnalyzerAgent
 
         self._agent_classes = {
             AgentType.SEO_ANALYST: SEOAnalystAgent,
@@ -202,6 +203,8 @@ class AgentOrchestrator:
             AgentType.RAPID_INDEXING: RapidIndexingAgent,
             AgentType.CONTENT_GAP_ANALYZER: ContentGapAnalyzerAgent,
             AgentType.META_CTR_OPTIMIZER: MetaCTROptimizerAgent,
+            # Performance optimization
+            AgentType.PAGE_ANALYZER: PageAnalyzerAgent,
         }
 
     def _get_agent(self, agent_type: AgentType) -> BaseAgent:

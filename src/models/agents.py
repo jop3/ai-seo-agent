@@ -46,6 +46,8 @@ class AgentType(str, Enum):
     RAPID_INDEXING = "rapid_indexing"
     CONTENT_GAP_ANALYZER = "content_gap_analyzer"
     META_CTR_OPTIMIZER = "meta_ctr_optimizer"
+    # Performance optimization
+    PAGE_ANALYZER = "page_analyzer"
 
 
 class TaskStatus(str, Enum):
