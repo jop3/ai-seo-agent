@@ -27,6 +27,10 @@ from src.agents.conversational_commerce import ConversationalCommerceAgent
 from src.agents.ai_mode_tracker import AIModeTrackerAgent
 from src.agents.brand_mention_analyzer import BrandMentionAnalyzerAgent
 from src.agents.ai_citation_optimizer import AICitationOptimizerAgent
+from src.agents.community_research import CommunityResearchAgent
+from src.agents.rapid_indexing import RapidIndexingAgent
+from src.agents.content_gap_analyzer import ContentGapAnalyzerAgent
+from src.agents.meta_ctr_optimizer import MetaCTROptimizerAgent
 
 __all__ = [
     # Base
@@ -63,4 +67,9 @@ __all__ = [
     "AIModeTrackerAgent",
     "BrandMentionAnalyzerAgent",
     "AICitationOptimizerAgent",
+    # Article-based optimization agents
+    "CommunityResearchAgent",
+    "RapidIndexingAgent",
+    "ContentGapAnalyzerAgent",
+    "MetaCTROptimizerAgent",
 ]

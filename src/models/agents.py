@@ -41,6 +41,11 @@ class AgentType(str, Enum):
     AI_MODE_TRACKER = "ai_mode_tracker"
     BRAND_MENTION_ANALYZER = "brand_mention_analyzer"
     AI_CITATION_OPTIMIZER = "ai_citation_optimizer"
+    # Article-based optimization agents
+    COMMUNITY_RESEARCH = "community_research"
+    RAPID_INDEXING = "rapid_indexing"
+    CONTENT_GAP_ANALYZER = "content_gap_analyzer"
+    META_CTR_OPTIMIZER = "meta_ctr_optimizer"
 
 
 class TaskStatus(str, Enum):

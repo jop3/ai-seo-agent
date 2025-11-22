@@ -164,6 +164,10 @@ class AgentOrchestrator:
         from src.agents.ai_mode_tracker import AIModeTrackerAgent
         from src.agents.brand_mention_analyzer import BrandMentionAnalyzerAgent
         from src.agents.ai_citation_optimizer import AICitationOptimizerAgent
+        from src.agents.community_research import CommunityResearchAgent
+        from src.agents.rapid_indexing import RapidIndexingAgent
+        from src.agents.content_gap_analyzer import ContentGapAnalyzerAgent
+        from src.agents.meta_ctr_optimizer import MetaCTROptimizerAgent
 
         self._agent_classes = {
             AgentType.SEO_ANALYST: SEOAnalystAgent,
@@ -193,6 +197,11 @@ class AgentOrchestrator:
             AgentType.AI_MODE_TRACKER: AIModeTrackerAgent,
             AgentType.BRAND_MENTION_ANALYZER: BrandMentionAnalyzerAgent,
             AgentType.AI_CITATION_OPTIMIZER: AICitationOptimizerAgent,
+            # Article-based optimization agents
+            AgentType.COMMUNITY_RESEARCH: CommunityResearchAgent,
+            AgentType.RAPID_INDEXING: RapidIndexingAgent,
+            AgentType.CONTENT_GAP_ANALYZER: ContentGapAnalyzerAgent,
+            AgentType.META_CTR_OPTIMIZER: MetaCTROptimizerAgent,
         }
 
     def _get_agent(self, agent_type: AgentType) -> BaseAgent:
