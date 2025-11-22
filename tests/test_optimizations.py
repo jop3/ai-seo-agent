@@ -149,6 +149,9 @@ class TestConnectionPool:
             enable_http2=False,  # Disable HTTP/2 for testing
         )
 
+        # Ensure session is initialized before checking stats
+        await pool._ensure_session()
+
         stats = await pool.get_stats()
         assert stats["limit"] == 50
         assert stats["limit_per_host"] == 5
@@ -159,6 +162,9 @@ class TestConnectionPool:
     async def test_connection_pool_http2_detection(self):
         """Test HTTP/2 availability detection."""
         pool = ConnectionPool(enable_http2=True)
+
+        # Ensure session is initialized before checking stats
+        await pool._ensure_session()
 
         stats = await pool.get_stats()
         # Should have http2_available key
@@ -308,19 +314,19 @@ class TestSmartRetry:
         """Test retry policy tracks statistics."""
         policy = SmartRetryPolicy(max_attempts=3, base_delay=0.01)
 
-        attempts = 0
+        call_count = 0
 
         async def sometimes_fails():
-            nonlocal attempts
-            attempts += 1
-            if attempts == 1:
+            nonlocal call_count
+            call_count += 1
+            # First execute() call: fail on attempt 1, succeed on attempt 2
+            # Second execute() call: succeed immediately
+            if call_count == 1:
                 raise ConnectionError("Fail once")
             return "success"
 
-        # First call - needs retry
+        # First call - needs retry (fails once, then succeeds)
         await policy.execute(sometimes_fails)
-
-        attempts = 0  # Reset
 
         # Second call - succeeds first try
         await policy.execute(sometimes_fails)
