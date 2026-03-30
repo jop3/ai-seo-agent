@@ -2,7 +2,7 @@
 
 from src.integrations.google_search_console import GoogleSearchConsoleClient
 from src.integrations.serp import SerpClient, get_serp_client
-from src.integrations.azure_openai import AzureOpenAIClient
+from src.integrations.openai_client import OpenAIClient, AzureOpenAIClient  # AzureOpenAIClient is deprecated alias
 from src.integrations.teams import TeamsNotifier
 from src.integrations.optimizely import OptimizelyClient
 from src.integrations.ahrefs import AhrefsClient, get_ahrefs_client
@@ -15,8 +15,9 @@ __all__ = [
     # SERP providers
     "SerpClient",
     "get_serp_client",
-    # AI
-    "AzureOpenAIClient",
+    # LLM Client (OpenAI-compatible APIs)
+    "OpenAIClient",
+    "AzureOpenAIClient",  # Deprecated alias for backwards compatibility
     # Notifications
     "TeamsNotifier",
     # Experimentation

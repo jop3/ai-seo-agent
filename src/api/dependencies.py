@@ -7,7 +7,7 @@ from fastapi import Depends, Header, HTTPException, status
 
 from src.agents.base import AgentContext
 from src.config import Settings, get_settings
-from src.integrations.azure_openai import AzureOpenAIClient
+from src.integrations.openai_client import AzureOpenAIClient
 from src.integrations.google_search_console import GoogleSearchConsoleClient
 from src.integrations.optimizely import OptimizelyClient
 from src.integrations.serp import get_serp_client, SerpClient
@@ -37,9 +37,10 @@ async def verify_api_key(
 
 @lru_cache
 def get_openai_client() -> AzureOpenAIClient:
-    """Get Azure OpenAI client."""
+    """Get Azure OpenAI or standard OpenAI client (Docker Model Runner compatible)."""
     settings = get_settings()
-    return AzureOpenAIClient(settings.azure)
+    # Pass full settings to support both Azure and standard OpenAI API
+    return AzureOpenAIClient(settings)
 
 
 def get_gsc_client() -> GoogleSearchConsoleClient | None:

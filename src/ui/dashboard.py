@@ -21,7 +21,7 @@ DASHBOARD_HTML = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SEO Agent Dashboard</title>
+    <title>Dashboard - SEO Agent</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -32,27 +32,75 @@ DASHBOARD_HTML = """
             min-height: 100vh;
         }
 
-        .navbar {
-            background: #1e293b;
-            padding: 1rem 2rem;
+        /* Global Navigation */
+        .global-nav {
+            background: #0f172a;
+            padding: 0.75rem 2rem;
             display: flex;
             align-items: center;
             gap: 2rem;
-            border-bottom: 1px solid #334155;
+            border-bottom: 1px solid #1e293b;
         }
-        .navbar h1 { font-size: 1.5rem; color: #f1f5f9; }
-        .navbar nav { display: flex; gap: 1rem; }
-        .navbar a {
+        .global-nav .logo {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            text-decoration: none;
+        }
+        .global-nav .nav-links {
+            display: flex;
+            gap: 0.25rem;
+            margin-left: auto;
+        }
+        .global-nav .nav-links a {
             color: #94a3b8;
             text-decoration: none;
             padding: 0.5rem 1rem;
             border-radius: 6px;
+            font-size: 0.9rem;
             transition: all 0.2s;
         }
-        .navbar a:hover, .navbar a.active {
+        .global-nav .nav-links a:hover {
+            background: #1e293b;
+            color: #f1f5f9;
+        }
+        .global-nav .nav-links a.active {
+            background: #3b82f6;
+            color: white;
+        }
+
+        /* Sub Navigation */
+        .sub-nav {
+            background: #1e293b;
+            padding: 0.5rem 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            border-bottom: 1px solid #334155;
+        }
+        .sub-nav a {
+            color: #94a3b8;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        .sub-nav a:hover, .sub-nav a.active {
             background: #334155;
             color: #f1f5f9;
         }
+        .sub-nav .refresh-btn {
+            margin-left: auto;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 0.4rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .sub-nav .refresh-btn:hover { background: #2563eb; }
 
         .container {
             max-width: 1400px;
@@ -188,17 +236,25 @@ DASHBOARD_HTML = """
     </style>
 </head>
 <body>
-    <nav class="navbar">
-        <h1>SEO Agent</h1>
-        <nav>
-            <a href="#" class="active" onclick="showSection('overview')">Overview</a>
-            <a href="#" onclick="showSection('aio')">AI Overviews</a>
-            <a href="#" onclick="showSection('traffic')">Traffic</a>
-            <a href="#" onclick="showSection('competitors')">Competitors</a>
-            <a href="#" onclick="showSection('technical')">Technical</a>
-        </nav>
-        <button class="refresh-btn" onclick="refreshData()" style="margin-left: auto;">Refresh</button>
+    <!-- Global Navigation -->
+    <nav class="global-nav">
+        <a href="http://localhost:8080" class="logo">SEO Agent</a>
+        <div class="nav-links">
+            <a href="http://localhost:8080">Chat</a>
+            <a href="http://localhost:8081" class="active">Dashboard</a>
+            <a href="http://localhost:8082">Settings</a>
+        </div>
     </nav>
+
+    <!-- Sub Navigation - Dashboard specific -->
+    <div class="sub-nav">
+        <a href="#" class="active" onclick="showSection('overview')">Overview</a>
+        <a href="#" onclick="showSection('aio')">AI Overviews</a>
+        <a href="#" onclick="showSection('traffic')">Traffic</a>
+        <a href="#" onclick="showSection('competitors')">Competitors</a>
+        <a href="#" onclick="showSection('technical')">Technical</a>
+        <button class="refresh-btn" onclick="refreshData()">Refresh</button>
+    </div>
 
     <div class="container">
         <div class="header-row">

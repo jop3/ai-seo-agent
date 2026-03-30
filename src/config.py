@@ -116,6 +116,11 @@ class Settings(BaseSettings):
     # MVP Auth
     api_key: SecretStr = SecretStr("")
 
+    # OpenAI / Local LLM
+    openai_api_key: str = ""
+    openai_api_base: str = ""
+    openai_model: str = "gpt-3.5-turbo"
+
     # Redis
     redis_url: str = "redis://localhost:6379/0"
 

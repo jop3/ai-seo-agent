@@ -82,7 +82,7 @@ async def _analyze(queries: Optional[list[str]], full: bool, limit: int):
         task = progress.add_task("Initializing...", total=None)
 
         # Create context
-        from src.integrations.azure_openai import AzureOpenAIClient
+        from src.integrations.openai_client import AzureOpenAIClient
         from src.integrations.google_search_console import GoogleSearchConsoleClient
         from src.integrations.serp import get_serp_client
         from src.integrations.teams import TeamsNotifier
@@ -207,7 +207,7 @@ def test_page(
 async def _test_page(url: str):
     from src.agents.agent_tester import AgentTesterAgent
     from src.agents.base import AgentContext
-    from src.integrations.azure_openai import AzureOpenAIClient
+    from src.integrations.openai_client import AzureOpenAIClient
     from src.models.agents import AgentTask
 
     settings = get_settings()
@@ -316,8 +316,8 @@ def chat(
 
 
 async def _chat(agent_name: str, initial_task: str | None):
-    from src.azure_agents.definitions import ALL_AGENTS
-    from src.azure_agents.runner import LocalAgentRunner, ConversationalAgent
+    from src.agent_runner.definitions import ALL_AGENTS
+    from src.agent_runner.runner import LocalAgentRunner, ConversationalAgent
 
     # Find agent
     agent = next((a for a in ALL_AGENTS if a.name == agent_name), None)
@@ -389,7 +389,7 @@ async def _process_chat_message(conv_agent, message: str):
 @app.command()
 def agents():
     """List available agents and their capabilities."""
-    from src.azure_agents.definitions import ALL_AGENTS
+    from src.agent_runner.definitions import ALL_AGENTS
 
     for agent in ALL_AGENTS:
         console.print(f"\n[bold cyan]{agent.name}[/bold cyan]")
@@ -416,7 +416,7 @@ def run_task(
 
 async def _run_task(agent_name: str, task: str, output_file: str | None):
     import json
-    from src.azure_agents.runner import run_agent_task
+    from src.agent_runner.runner import run_agent_task
 
     with Progress(
         SpinnerColumn(),
@@ -464,8 +464,8 @@ def deploy_agents(
 
 
 async def _deploy_agents(connection_string: str):
-    from src.azure_agents.client import AzureAgentClient
-    from src.azure_agents.definitions import ALL_AGENTS
+    from src.agent_runner.client import AzureAgentClient
+    from src.agent_runner.definitions import ALL_AGENTS
 
     console.print("[yellow]Deploying agents to Azure AI Agent Service...[/yellow]\n")
 
@@ -498,7 +498,7 @@ def list_azure_agents(
 
 
 async def _list_azure_agents(connection_string: str):
-    from src.azure_agents.client import AzureAgentClient
+    from src.agent_runner.client import AzureAgentClient
 
     try:
         client = AzureAgentClient(project_connection_string=connection_string)

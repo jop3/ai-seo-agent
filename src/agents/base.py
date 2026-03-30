@@ -24,7 +24,7 @@ from src.core.errors import (
     RateLimitError,
     ErrorCode,
 )
-from src.integrations.azure_openai import AzureOpenAIClient
+from src.integrations.openai_client import AzureOpenAIClient
 from src.integrations.google_search_console import GoogleSearchConsoleClient
 from src.integrations.optimizely import OptimizelyClient
 from src.integrations.serp import SerpClient

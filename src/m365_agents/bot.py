@@ -21,8 +21,8 @@ from botbuilder.schema import (
 )
 import structlog
 
-from src.azure_agents.definitions import ALL_AGENTS
-from src.azure_agents.runner import LocalAgentRunner, AgentOrchestrator
+from src.agent_runner.definitions import ALL_AGENTS
+from src.agent_runner.runner import LocalAgentRunner, AgentOrchestrator
 from src.m365_agents.cards import AdaptiveCardBuilder
 
 logger = structlog.get_logger()
@@ -168,7 +168,7 @@ class SEOAgentBot(ActivityHandler):
         """Run SEO analysis."""
         await turn_context.send_activity(Activity(type=ActivityTypes.typing))
 
-        from src.azure_agents.definitions import SEO_ANALYST_AGENT
+        from src.agent_runner.definitions import SEO_ANALYST_AGENT
 
         task = args or "Run a full analysis of our top queries and identify AIO impact"
 
@@ -192,7 +192,7 @@ class SEOAgentBot(ActivityHandler):
 
         await turn_context.send_activity(Activity(type=ActivityTypes.typing))
 
-        from src.azure_agents.definitions import SEO_ANALYST_AGENT
+        from src.agent_runner.definitions import SEO_ANALYST_AGENT
 
         task = f"Check if these queries trigger AI Overviews and if we're cited: {queries}"
 
@@ -232,7 +232,7 @@ class SEOAgentBot(ActivityHandler):
         """Generate optimization recommendations."""
         await turn_context.send_activity(Activity(type=ActivityTypes.typing))
 
-        from src.azure_agents.definitions import OPTIMIZER_AGENT
+        from src.agent_runner.definitions import OPTIMIZER_AGENT
 
         task = f"Generate optimization recommendations for {url} targeting the query '{query}'"
 

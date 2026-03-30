@@ -13,6 +13,11 @@ dependencies = [
     "uvicorn[standard]>=0.27.0,<1.0.0",
     "pydantic>=2.5.0,<3.0.0",
     "pydantic-settings>=2.1.0,<3.0.0",
+    "python-multipart>=0.0.6,<1.0.0",  # For form handling
+    "jinja2>=3.1.0,<4.0.0",  # For templates
+
+    # LLM Provider Abstraction (supports 100+ providers)
+    "litellm>=1.40.0,<2.0.0",
 
     # Azure (pin major versions to avoid conflicts)
     "azure-identity>=1.15.0,<2.0.0",

@@ -6,7 +6,7 @@ Creates rich, interactive cards for Teams conversations.
 
 from typing import Any
 
-from src.azure_agents.definitions import AgentDefinition
+from src.agent_runner.definitions import AgentDefinition
 
 
 class AdaptiveCardBuilder:

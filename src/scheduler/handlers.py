@@ -11,7 +11,7 @@ from src.agents.base import AgentContext
 from src.agents.seo_analyst import SEOAnalystAgent
 from src.agents.monitoring import MonitoringAgent
 from src.config import get_settings
-from src.integrations.azure_openai import AzureOpenAIClient
+from src.integrations.openai_client import AzureOpenAIClient
 from src.integrations.google_search_console import GoogleSearchConsoleClient
 from src.integrations.serp import get_serp_client
 from src.integrations.teams import TeamsNotifier
