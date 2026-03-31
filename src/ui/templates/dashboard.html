@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - SEO Agent{% endblock %}
+
+{% block subnav %}
+<div class="sub-nav">
+    <button class="active" hx-get="/api/dashboard/overview" hx-target="#dashboard-content" hx-swap="innerHTML">Overview</button>
+    <button hx-get="/api/dashboard/queries" hx-target="#dashboard-content" hx-swap="innerHTML">Top Queries</button>
+    <button hx-get="/api/dashboard/aio" hx-target="#dashboard-content" hx-swap="innerHTML">AI Overviews</button>
+    <button hx-get="/api/dashboard/alerts" hx-target="#dashboard-content" hx-swap="innerHTML">Alerts</button>
+    <span class="spacer"></span>
+    <button class="btn btn-secondary" hx-get="/api/dashboard/refresh" hx-target="#dashboard-content" hx-swap="innerHTML">
+        <span class="loading-indicator loading"></span>
+        Refresh
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<div style="padding: 2rem;">
+    <div id="dashboard-content">
+        <!-- Stats Grid -->
+        <div class="grid grid-4 mb-2">
+            <div class="card stat-card">
+                <div class="stat-value" id="total-queries">{{ stats.total_queries or '--' }}</div>
+                <div class="stat-label">Total Queries</div>
+            </div>
+            <div class="card stat-card">
+                <div class="stat-value" id="aio-queries">{{ stats.aio_queries or '--' }}</div>
+                <div class="stat-label">Queries with AIO</div>
+            </div>
+            <div class="card stat-card">
+                <div class="stat-value" id="citations">{{ stats.citations or '--' }}</div>
+                <div class="stat-label">Your Citations</div>
+            </div>
+            <div class="card stat-card">
+                <div class="stat-value {% if stats.traffic_change and stats.traffic_change < 0 %}text-error{% else %}text-success{% endif %}">
+                    {{ stats.traffic_change or '--' }}%
+                </div>
+                <div class="stat-label">Traffic Change</div>
+            </div>
+        </div>
+
+        <!-- Content Grid -->
+        <div class="grid grid-2">
+            <div class="card">
+                <div class="card-header">Top Performing Queries</div>
+                <div id="top-queries">
+                    {% if queries %}
+                        {% for query in queries[:5] %}
+                        <div style="padding: 0.5rem 0; border-bottom: 1px solid #334155;">
+                            <div style="font-weight: 500;">{{ query.query }}</div>
+                            <div class="text-muted" style="font-size: 0.85rem;">
+                                {{ query.clicks }} clicks &middot; {{ query.impressions }} impressions
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No data available. Connect Google Search Console in Settings.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">Recent Alerts</div>
+                <div id="recent-alerts">
+                    {% if alerts %}
+                        {% for alert in alerts[:5] %}
+                        <div class="alert alert-{{ alert.type }}">
+                            <strong>{{ alert.title }}</strong><br>
+                            <span class="text-muted">{{ alert.message }}</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No alerts. The system is monitoring your site.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- AIO Status -->
+        <div class="card mt-2">
+            <div class="card-header">AI Overview Status</div>
+            <div id="aio-status">
+                {% if aio_data %}
+                <table style="width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>Query</th>
+                            <th>AIO Present</th>
+                            <th>You're Cited</th>
+                            <th>Position</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in aio_data[:10] %}
+                        <tr>
+                            <td>{{ item.query }}</td>
+                            <td>{% if item.has_aio %}<span class="text-success">Yes</span>{% else %}No{% endif %}</td>
+                            <td>{% if item.is_cited %}<span class="text-success">Yes</span>{% else %}<span class="text-muted">No</span>{% endif %}</td>
+                            <td>{{ item.position or '--' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="text-muted">Run an AIO analysis to see which queries trigger AI Overviews.</p>
+                <button class="btn btn-primary mt-1" hx-post="/api/analysis/aio-check" hx-target="#aio-status">
+                    Run AIO Analysis
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

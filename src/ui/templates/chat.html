@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Chat - SEO Agent{% endblock %}
+
+{% block subnav %}
+<div class="sub-nav">
+    <label for="agent-select">Agent:</label>
+    <select id="agent-select">
+        {% for agent in agents %}
+        <option value="{{ agent.name }}" {% if agent.name == 'settings-assistant' %}selected{% endif %}>
+            {{ agent.display_name }}
+        </option>
+        {% endfor %}
+    </select>
+    <button onclick="sendQuick('What agents are available?')">List Agents</button>
+    <button onclick="sendQuick('Help me configure LLM settings')">LLM Help</button>
+    <button onclick="sendQuick('Create workflow for content creation')">Workflow</button>
+    <span class="spacer"></span>
+    <span id="status" class="status disconnected">Disconnected</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="chat-container">
+    <div class="message agent">
+        <div class="agent-name">Settings Assistant</div>
+        <p>Welcome! I'm your guide to the SEO Agent system. I can help you:</p>
+        <ul>
+            <li>Understand what each agent does and when to use it</li>
+            <li>Configure LLM providers and model assignments</li>
+            <li>Set up writing style analysis for content generation</li>
+            <li>Create multi-agent workflows for complex goals</li>
+        </ul>
+        <p>Try asking "What agents are available?" or switch to a specific agent above.</p>
+    </div>
+</div>
+
+<form id="chat-form">
+    <div id="input-container">
+        <input type="text" id="message-input" placeholder="Ask the agent anything..." autocomplete="off">
+        <button type="submit" id="send-btn">Send</button>
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/chat.js"></script>
+{% endblock %}

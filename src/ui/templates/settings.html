@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - SEO Agent{% endblock %}
+
+{% block subnav %}
+<div class="sub-nav">
+    <button class="tab active" onclick="showTab('llm')">LLM Providers</button>
+    <button class="tab" onclick="showTab('agents')">Agent Models</button>
+    <button class="tab" onclick="showTab('site')">Site Settings</button>
+    <span class="spacer"></span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <!-- Flash messages -->
+    <div id="flash-messages"></div>
+
+    <!-- LLM Providers Tab -->
+    <div id="tab-llm" class="tab-content">
+        <div class="card">
+            <div class="card-header">LLM Providers</div>
+
+            <div id="providers-list">
+                {% for provider_id, provider in settings.providers.items() %}
+                <div class="provider-card">
+                    <div class="provider-info">
+                        <span class="provider-status {% if provider.api_key or provider_id == 'local' %}active{% else %}inactive{% endif %}"></span>
+                        <div>
+                            <strong>{{ provider_id | title }}</strong>
+                            {% if provider.api_base %}
+                            <div class="text-muted" style="font-size: 0.8rem;">{{ provider.api_base }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary" onclick="editProvider('{{ provider_id }}')">Configure</button>
+                </div>
+                {% endfor %}
+            </div>
+
+            <button class="btn btn-primary mt-2" onclick="showAddProvider()">Add Provider</button>
+        </div>
+
+        <!-- Provider Edit Modal -->
+        <div id="provider-modal" class="card mt-2 hidden">
+            <div class="card-header">Configure Provider</div>
+            <form id="provider-form" hx-post="/api/settings/provider" hx-target="#flash-messages" hx-swap="innerHTML">
+                <input type="hidden" name="provider_id" id="provider-id">
+
+                <div class="form-group">
+                    <label>Provider Name</label>
+                    <input type="text" name="name" id="provider-name" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label>API Key</label>
+                    <input type="password" name="api_key" id="provider-api-key" placeholder="Enter API key">
+                </div>
+
+                <div class="form-group">
+                    <label>API Base URL (optional)</label>
+                    <input type="text" name="api_base" id="provider-api-base" placeholder="https://api.example.com/v1">
+                </div>
+
+                <div style="display: flex; gap: 1rem;">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                    <button type="button" class="btn btn-secondary" onclick="hideProviderModal()">Cancel</button>
+                    <button type="button" class="btn btn-success"
+                            hx-post="/api/settings/test-provider"
+                            hx-include="#provider-form"
+                            hx-target="#flash-messages">Test Connection</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Models -->
+        <div class="card mt-2">
+            <div class="card-header">Available Models</div>
+            <div id="models-list">
+                {% for model_id, model in settings.models.items() %}
+                <div class="provider-card">
+                    <div class="provider-info">
+                        <div>
+                            <strong>{{ model_id }}</strong>
+                            <div class="text-muted" style="font-size: 0.8rem;">{{ model.provider }}</div>
+                        </div>
+                    </div>
+                    {% if model_id == settings.default_model_id %}
+                    <span class="text-success">Default</span>
+                    {% else %}
+                    <button class="btn btn-secondary"
+                            hx-post="/api/settings/default-model"
+                            hx-vals='{"model_id": "{{ model_id }}"}'
+                            hx-target="#flash-messages">Set Default</button>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Agent Models Tab -->
+    <div id="tab-agents" class="tab-content hidden">
+        <div class="card">
+            <div class="card-header">Agent Model Assignments</div>
+            <p class="text-muted mb-2">Assign specific models to agents. Unassigned agents use the default model.</p>
+
+            <form hx-post="/api/settings/agent-models" hx-target="#flash-messages">
+                {% for agent in agents %}
+                <div class="form-group">
+                    <label>{{ agent.display_name }}</label>
+                    <select name="agent_{{ agent.name }}">
+                        <option value="">Use Default ({{ settings.default_model_id }})</option>
+                        {% for model_id in settings.models.keys() %}
+                        {% set assignment = settings.agent_assignments.get(agent.name) %}
+                        <option value="{{ model_id }}"
+                                {% if assignment and assignment.model_id == model_id %}selected{% endif %}>
+                            {{ model_id }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endfor %}
+
+                <button type="submit" class="btn btn-primary">Save Assignments</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Site Settings Tab -->
+    <div id="tab-site" class="tab-content hidden">
+        <div class="card">
+            <div class="card-header">Site Configuration</div>
+
+            <form hx-post="/api/settings/site" hx-target="#flash-messages">
+                <div class="form-group">
+                    <label>Site URL</label>
+                    <input type="url" name="site_url" value="{{ site_settings.site_url or '' }}" placeholder="https://example.com">
+                </div>
+
+                <div class="form-group">
+                    <label>Site Name</label>
+                    <input type="text" name="site_name" value="{{ site_settings.site_name or '' }}" placeholder="My Website">
+                </div>
+
+                <div class="form-group">
+                    <label>Google Search Console Property</label>
+                    <input type="text" name="gsc_property" value="{{ site_settings.gsc_property or '' }}" placeholder="sc-domain:example.com">
+                </div>
+
+                <div class="form-group">
+                    <label>Default Language</label>
+                    <select name="language">
+                        <option value="en" {% if site_settings.language == 'en' %}selected{% endif %}>English</option>
+                        <option value="sv" {% if site_settings.language == 'sv' %}selected{% endif %}>Swedish</option>
+                        <option value="de" {% if site_settings.language == 'de' %}selected{% endif %}>German</option>
+                        <option value="fr" {% if site_settings.language == 'fr' %}selected{% endif %}>French</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Save Settings</button>
+            </form>
+        </div>
+
+        <div class="card mt-2">
+            <div class="card-header">Content Settings</div>
+
+            <form hx-post="/api/settings/content" hx-target="#flash-messages">
+                <div class="form-group">
+                    <label>Brand Voice Description</label>
+                    <textarea name="brand_voice" rows="3" placeholder="Describe your brand's tone and voice...">{{ site_settings.brand_voice or '' }}</textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Target Audience</label>
+                    <input type="text" name="target_audience" value="{{ site_settings.target_audience or '' }}" placeholder="e.g., Healthcare professionals, consumers">
+                </div>
+
+                <div class="form-group">
+                    <label>Content Guidelines URL</label>
+                    <input type="url" name="guidelines_url" value="{{ site_settings.guidelines_url or '' }}" placeholder="https://example.com/style-guide">
+                </div>
+
+                <button type="submit" class="btn btn-primary">Save Content Settings</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showTab(tabName) {
+    // Hide all tabs
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+    document.querySelectorAll('.sub-nav .tab').forEach(btn => btn.classList.remove('active'));
+
+    // Show selected tab
+    document.getElementById('tab-' + tabName).classList.remove('hidden');
+    event.target.classList.add('active');
+}
+
+function editProvider(providerId) {
+    const modal = document.getElementById('provider-modal');
+    document.getElementById('provider-id').value = providerId;
+    document.getElementById('provider-name').value = providerId;
+    modal.classList.remove('hidden');
+}
+
+function hideProviderModal() {
+    document.getElementById('provider-modal').classList.add('hidden');
+}
+
+function showAddProvider() {
+    const providerId = prompt('Enter provider name (e.g., openai, anthropic, local):');
+    if (providerId) {
+        editProvider(providerId);
+        document.getElementById('provider-name').removeAttribute('readonly');
+    }
+}
+</script>
+{% endblock %}

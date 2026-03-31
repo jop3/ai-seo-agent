@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SEO Agent{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <div class="page-wrapper">
+        <nav class="global-nav">
+            <a href="/" class="logo">SEO Agent</a>
+            <div class="nav-links">
+                <a href="/" class="{% if active_page == 'chat' %}active{% endif %}">Chat</a>
+                <a href="/dashboard" class="{% if active_page == 'dashboard' %}active{% endif %}">Dashboard</a>
+                <a href="/settings" class="{% if active_page == 'settings' %}active{% endif %}">Settings</a>
+            </div>
+        </nav>
+
+        {% block subnav %}{% endblock %}
+
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>
